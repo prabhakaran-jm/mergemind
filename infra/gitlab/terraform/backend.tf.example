@@ -1,0 +1,24 @@
+# Terraform Backend Configuration Template
+# Copy this to backend.tf and customize for your project
+
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.36"
+    }
+  }
+  
+  backend "gcs" {
+    # Replace with your project-specific bucket name
+    bucket = "terraform-state-YOUR_PROJECT_ID"
+    prefix = "gitlab-infrastructure"
+    
+    # Optional: Enable state encryption
+    # encryption_key = "path/to/encryption/key"
+    
+    # Optional: Enable state locking (requires Cloud Storage API)
+    # enable_state_locking = true
+  }
+}

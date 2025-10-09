@@ -4,7 +4,8 @@ This directory contains infrastructure-as-code for setting up a self-hosted GitL
 
 ## 🏗️ Architecture
 
-- **Terraform**: Infrastructure provisioning on GCP
+- **Terraform**: Infrastructure provisioning on GCP with remote state
+- **GCS Backend**: Remote state storage with versioning and locking
 - **Bootstrap Script**: Automated GitLab installation and configuration
 - **Docker Compose**: Local development environment
 - **GCS Backups**: Automated daily backups to Google Cloud Storage
@@ -18,17 +19,34 @@ This directory contains infrastructure-as-code for setting up a self-hosted GitL
 
 ## 🚀 Quick Start
 
-### 1. Configure Terraform
+### 1. Deploy Infrastructure (Recommended)
+
+```bash
+cd infra/gitlab
+./setup.sh
+```
+
+This will automatically:
+- Set up Terraform GCS backend
+- Create state bucket with versioning
+- Configure terraform.tfvars and backend.tf
+- Initialize Terraform
+- Deploy infrastructure
+
+### 2. Manual Setup (Alternative)
 
 ```bash
 cd infra/gitlab/terraform
+
+# Setup backend
+./setup-backend.sh
+
+# Configure variables
 cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with your GCP project ID
-```
+cp backend.tf.example backend.tf
+# Edit files with your GCP project ID
 
-### 2. Deploy Infrastructure
-
-```bash
+# Deploy
 terraform init
 terraform plan
 terraform apply

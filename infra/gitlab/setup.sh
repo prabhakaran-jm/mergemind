@@ -52,12 +52,30 @@ echo -e "${BLUE}📁 Using GCP project: ${PROJECT_ID}${NC}"
 # Navigate to terraform directory
 cd terraform
 
+# Setup Terraform backend
+echo -e "${YELLOW}🗄️  Setting up Terraform backend...${NC}"
+if [ -f "setup-backend.sh" ]; then
+    chmod +x setup-backend.sh
+    ./setup-backend.sh
+else
+    echo -e "${RED}❌ setup-backend.sh not found${NC}"
+    exit 1
+fi
+
 # Check if terraform.tfvars exists
 if [ ! -f "terraform.tfvars" ]; then
     echo -e "${YELLOW}📝 Creating terraform.tfvars...${NC}"
     cp terraform.tfvars.example terraform.tfvars
     sed -i "s/YOUR_GCP_PROJECT_ID/${PROJECT_ID}/g" terraform.tfvars
     echo -e "${GREEN}✅ Created terraform.tfvars with project ID${NC}"
+fi
+
+# Check if backend.tf exists
+if [ ! -f "backend.tf" ]; then
+    echo -e "${YELLOW}📝 Creating backend.tf...${NC}"
+    cp backend.tf.example backend.tf
+    sed -i "s/YOUR_PROJECT_ID/${PROJECT_ID}/g" backend.tf
+    echo -e "${GREEN}✅ Created backend.tf with project ID${NC}"
 fi
 
 # Initialize terraform
