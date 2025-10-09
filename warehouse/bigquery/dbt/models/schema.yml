@@ -1,0 +1,130 @@
+version: 2
+
+models:
+  - name: mr_activity_view
+    description: "Merge request activity view with pipeline status and recent notes"
+    columns:
+      - name: mr_id
+        description: "Merge request ID"
+        tests:
+          - not_null
+          - unique
+      - name: project_id
+        description: "GitLab project ID"
+        tests:
+          - not_null
+      - name: title
+        description: "Merge request title"
+        tests:
+          - not_null
+      - name: author_id
+        description: "Author user ID"
+        tests:
+          - not_null
+      - name: state
+        description: "Current state of the merge request"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['opened', 'closed', 'merged']
+      - name: last_pipeline_status
+        description: "Status of the most recent pipeline"
+      - name: last_pipeline_age_min
+        description: "Age of the most recent pipeline in minutes"
+      - name: notes_count_24h
+        description: "Number of notes in the last 24 hours"
+        tests:
+          - not_null
+      - name: approvals_left
+        description: "Number of approvals remaining"
+        tests:
+          - not_null
+      - name: additions
+        description: "Number of lines added"
+        tests:
+          - not_null
+      - name: deletions
+        description: "Number of lines deleted"
+        tests:
+          - not_null
+
+  - name: cycle_time_view
+    description: "Cycle time analysis for completed merge requests"
+    columns:
+      - name: mr_id
+        description: "Merge request ID"
+        tests:
+          - not_null
+          - unique
+      - name: project_id
+        description: "GitLab project ID"
+        tests:
+          - not_null
+      - name: created_at
+        description: "When the merge request was created"
+        tests:
+          - not_null
+      - name: end_at
+        description: "When the merge request was completed"
+        tests:
+          - not_null
+      - name: cycle_time_hours
+        description: "Cycle time in hours"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 8760  # 1 year max
+
+  - name: merge_risk_features
+    description: "Features for merge request risk scoring"
+    columns:
+      - name: mr_id
+        description: "Merge request ID"
+        tests:
+          - not_null
+          - unique
+      - name: project_id
+        description: "GitLab project ID"
+        tests:
+          - not_null
+      - name: age_hours
+        description: "Age of the merge request in hours"
+        tests:
+          - not_null
+      - name: notes_count_24h
+        description: "Number of notes in the last 24 hours"
+        tests:
+          - not_null
+      - name: last_pipeline_status_is_fail
+        description: "Whether the last pipeline failed"
+        tests:
+          - not_null
+      - name: approvals_left
+        description: "Number of approvals remaining"
+        tests:
+          - not_null
+      - name: change_size_bucket
+        description: "Size bucket for the change"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['S', 'M', 'L', 'XL']
+      - name: work_in_progress
+        description: "Whether the title indicates work in progress"
+        tests:
+          - not_null
+      - name: labels_sensitive
+        description: "Whether the merge request has sensitive labels"
+        tests:
+          - not_null
+      - name: risk_score_rule
+        description: "Risk score from rule-based system"
+        tests:
+          - not_null
+      - name: risk_label
+        description: "Risk label (Low/Medium/High)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Low', 'Medium', 'High']

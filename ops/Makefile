@@ -25,6 +25,10 @@ dev.ui:
 	cd ui/web && npm run dev
 
 # dbt targets
+dbt.deps:
+	@echo "Installing dbt packages..."
+	cd warehouse/bigquery/dbt && dbt deps
+
 dbt.run:
 	@echo "Running dbt models..."
 	cd warehouse/bigquery/dbt && dbt run
@@ -32,6 +36,14 @@ dbt.run:
 dbt.test:
 	@echo "Testing dbt models..."
 	cd warehouse/bigquery/dbt && dbt test
+
+dbt.compile:
+	@echo "Compiling dbt models..."
+	cd warehouse/bigquery/dbt && dbt compile
+
+dbt.ls:
+	@echo "Listing dbt models..."
+	cd warehouse/bigquery/dbt && dbt ls
 
 # Data seeding
 seed:

@@ -1,0 +1,24 @@
+mergemind:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
+      dataset: "{{ env_var('BQ_DATASET_MODELED', 'mergemind') }}"
+      location: "{{ env_var('VERTEX_LOCATION', 'europe-west2') }}"
+      threads: 4
+      timeout_seconds: 300
+      priority: interactive
+      retries: 1
+      
+    prod:
+      type: bigquery
+      method: service-account
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
+      dataset: "{{ env_var('BQ_DATASET_MODELED', 'mergemind') }}"
+      location: "{{ env_var('VERTEX_LOCATION', 'europe-west2') }}"
+      threads: 8
+      timeout_seconds: 600
+      priority: batch
+      retries: 3
