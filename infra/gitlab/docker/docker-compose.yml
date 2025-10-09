@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    container_name: gitlab-ce
+    hostname: 'localhost'
+    ports:
+      - "8080:80"
+      - "8443:443"
+      - "2222:22"
+    volumes:
+      - gitlab_config:/etc/gitlab
+      - gitlab_logs:/var/log/gitlab
+      - gitlab_data:/var/opt/gitlab
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://localhost:8080'
+        gitlab_rails['gitlab_shell_ssh_port'] = 2222
+        # Disable Let's Encrypt for local development
+        letsencrypt['enable'] = false
+        # Use self-signed certificate
+        nginx['redirect_http_to_https'] = false
+        # Reduce memory usage for local development
+        puma['worker_processes'] = 2
+        puma['min_threads'] = 1
+        puma['max_threads'] = 2
+        sidekiq['max_concurrency'] = 5
+        postgresql['shared_preload_libraries'] = ""
+        postgresql['max_connections'] = 100
+        postgresql['work_mem'] = "8MB"
+        postgresql['maintenance_work_mem'] = "16MB"
+        postgresql['effective_cache_size'] = "128MB"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/opt/gitlab/bin/gitlab-healthcheck", "--fail", "--max-time", "10"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  gitlab_config:
+    driver: local
+  gitlab_logs:
+    driver: local
+  gitlab_data:
+    driver: local
+
+networks:
+  default:
+    name: gitlab-network
