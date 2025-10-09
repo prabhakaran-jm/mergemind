@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  gitlab-connector:
+    build: .
+    environment:
+      - GITLAB_TOKEN=${GITLAB_TOKEN}
+      - GITLAB_BASE_URL=${GITLAB_BASE_URL:-https://gitlab.com}
+      - GITLAB_PROJECT_IDS=${GITLAB_PROJECT_IDS:-100,101,102}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import connector; print('Connector is healthy')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Local BigQuery emulator for testing
+  bigquery-emulator:
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:emulators
+    command: gcloud beta emulators bigquery start --host-port=0.0.0.0:9050
+    ports:
+      - "9050:9050"
+    environment:
+      - BIGQUERY_EMULATOR_HOST=0.0.0.0:9050
+    profiles:
+      - testing

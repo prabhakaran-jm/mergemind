@@ -1,0 +1,100 @@
+{
+  "merge_requests": {
+    "description": "GitLab merge requests with metadata and status information",
+    "columns": {
+      "mr_id": {
+        "type": "integer",
+        "description": "Unique merge request ID",
+        "primary_key": true
+      },
+      "project_id": {
+        "type": "integer",
+        "description": "GitLab project ID"
+      },
+      "title": {
+        "type": "string",
+        "description": "Merge request title"
+      },
+      "description": {
+        "type": "string",
+        "description": "Merge request description"
+      },
+      "author_id": {
+        "type": "integer",
+        "description": "User ID of the author"
+      },
+      "created_at": {
+        "type": "timestamp",
+        "description": "When the MR was created"
+      },
+      "updated_at": {
+        "type": "timestamp",
+        "description": "When the MR was last updated"
+      },
+      "merged_at": {
+        "type": "timestamp",
+        "description": "When the MR was merged"
+      },
+      "closed_at": {
+        "type": "timestamp",
+        "description": "When the MR was closed"
+      },
+      "state": {
+        "type": "string",
+        "description": "Current state: opened, merged, closed"
+      },
+      "source_branch": {
+        "type": "string",
+        "description": "Source branch name"
+      },
+      "target_branch": {
+        "type": "string",
+        "description": "Target branch name"
+      },
+      "web_url": {
+        "type": "string",
+        "description": "GitLab web URL for the MR"
+      },
+      "sha": {
+        "type": "string",
+        "description": "Latest commit SHA"
+      },
+      "merge_commit_sha": {
+        "type": "string",
+        "description": "Merge commit SHA"
+      },
+      "additions": {
+        "type": "integer",
+        "description": "Number of lines added"
+      },
+      "deletions": {
+        "type": "integer",
+        "description": "Number of lines deleted"
+      },
+      "approvals_left": {
+        "type": "integer",
+        "description": "Number of approvals remaining"
+      },
+      "labels": {
+        "type": "string",
+        "description": "JSON array of labels"
+      },
+      "work_in_progress": {
+        "type": "boolean",
+        "description": "Whether the MR is marked as WIP"
+      },
+      "merge_status": {
+        "type": "string",
+        "description": "Merge status: unchecked, checking, can_be_merged, cannot_be_merged"
+      },
+      "has_conflicts": {
+        "type": "boolean",
+        "description": "Whether the MR has merge conflicts"
+      },
+      "blocking_discussions_resolved": {
+        "type": "boolean",
+        "description": "Whether all blocking discussions are resolved"
+      }
+    }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "users": {
+    "description": "GitLab users and contributors",
+    "columns": {
+      "user_id": {
+        "type": "integer",
+        "description": "Unique user ID",
+        "primary_key": true
+      },
+      "name": {
+        "type": "string",
+        "description": "User's full name"
+      },
+      "username": {
+        "type": "string",
+        "description": "User's username"
+      },
+      "email": {
+        "type": "string",
+        "description": "User's email address"
+      },
+      "created_at": {
+        "type": "timestamp",
+        "description": "When the user account was created"
+      },
+      "last_activity_on": {
+        "type": "date",
+        "description": "Last activity date"
+      },
+      "state": {
+        "type": "string",
+        "description": "User state: active, blocked"
+      },
+      "avatar_url": {
+        "type": "string",
+        "description": "URL to user's avatar"
+      },
+      "web_url": {
+        "type": "string",
+        "description": "GitLab web URL for the user"
+      },
+      "is_admin": {
+        "type": "boolean",
+        "description": "Whether the user is an admin"
+      },
+      "can_create_group": {
+        "type": "boolean",
+        "description": "Whether the user can create groups"
+      },
+      "can_create_project": {
+        "type": "boolean",
+        "description": "Whether the user can create projects"
+      }
+    }
+  }
+}

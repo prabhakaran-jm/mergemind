@@ -1,0 +1,56 @@
+{
+  "pipelines": {
+    "description": "CI/CD pipeline runs for merge requests",
+    "columns": {
+      "pipeline_id": {
+        "type": "integer",
+        "description": "Unique pipeline ID",
+        "primary_key": true
+      },
+      "project_id": {
+        "type": "integer",
+        "description": "GitLab project ID"
+      },
+      "mr_id": {
+        "type": "integer",
+        "description": "Merge request ID"
+      },
+      "status": {
+        "type": "string",
+        "description": "Pipeline status: success, failed, running, pending, canceled"
+      },
+      "created_at": {
+        "type": "timestamp",
+        "description": "When the pipeline was created"
+      },
+      "updated_at": {
+        "type": "timestamp",
+        "description": "When the pipeline was last updated"
+      },
+      "started_at": {
+        "type": "timestamp",
+        "description": "When the pipeline started running"
+      },
+      "finished_at": {
+        "type": "timestamp",
+        "description": "When the pipeline finished"
+      },
+      "duration": {
+        "type": "integer",
+        "description": "Pipeline duration in seconds"
+      },
+      "web_url": {
+        "type": "string",
+        "description": "GitLab web URL for the pipeline"
+      },
+      "ref": {
+        "type": "string",
+        "description": "Branch or tag name"
+      },
+      "sha": {
+        "type": "string",
+        "description": "Commit SHA"
+      }
+    }
+  }
+}

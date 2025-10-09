@@ -1,0 +1,52 @@
+{
+  "mr_notes": {
+    "description": "Comments, reviews, and approvals on merge requests",
+    "columns": {
+      "note_id": {
+        "type": "integer",
+        "description": "Unique note ID",
+        "primary_key": true
+      },
+      "project_id": {
+        "type": "integer",
+        "description": "GitLab project ID"
+      },
+      "mr_id": {
+        "type": "integer",
+        "description": "Merge request ID"
+      },
+      "author_id": {
+        "type": "integer",
+        "description": "User ID of the note author"
+      },
+      "created_at": {
+        "type": "timestamp",
+        "description": "When the note was created"
+      },
+      "updated_at": {
+        "type": "timestamp",
+        "description": "When the note was last updated"
+      },
+      "body": {
+        "type": "string",
+        "description": "Note content"
+      },
+      "note_type": {
+        "type": "string",
+        "description": "Classified note type: approval, review, comment"
+      },
+      "system": {
+        "type": "boolean",
+        "description": "Whether this is a system-generated note"
+      },
+      "resolved": {
+        "type": "boolean",
+        "description": "Whether the note is resolved"
+      },
+      "resolvable": {
+        "type": "boolean",
+        "description": "Whether the note can be resolved"
+      }
+    }
+  }
+}
