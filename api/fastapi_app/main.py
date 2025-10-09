@@ -11,6 +11,8 @@ import logging
 from contextlib import asynccontextmanager
 
 from routers import health
+from middleware.logging import StructuredLoggingMiddleware, MetricsMiddleware
+from services.metrics import metrics_service
 
 # Configure logging
 logging.basicConfig(
@@ -45,13 +47,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add observability middleware
+app.add_middleware(StructuredLoggingMiddleware)
+app.add_middleware(MetricsMiddleware)
+
 # Include routers
 app.include_router(health.router, prefix="/api/v1", tags=["health"])
 
 # Import and include other routers
-from routers import mrs, mr
+from routers import mrs, mr, metrics
 app.include_router(mrs.router, prefix="/api/v1", tags=["merge-requests"])
 app.include_router(mr.router, prefix="/api/v1", tags=["merge-request"])
+app.include_router(metrics.router, prefix="/api/v1", tags=["metrics"])
 
 
 @app.get("/")
