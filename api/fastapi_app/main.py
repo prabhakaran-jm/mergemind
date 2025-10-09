@@ -48,6 +48,11 @@ app.add_middleware(
 # Include routers
 app.include_router(health.router, prefix="/api/v1", tags=["health"])
 
+# Import and include other routers
+from routers import mrs, mr
+app.include_router(mrs.router, prefix="/api/v1", tags=["merge-requests"])
+app.include_router(mr.router, prefix="/api/v1", tags=["merge-request"])
+
 
 @app.get("/")
 async def root():
