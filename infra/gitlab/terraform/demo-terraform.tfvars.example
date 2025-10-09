@@ -1,9 +1,0 @@
-# GitLab Demo Resources Terraform Variables Example
-
-# Copy this file to terraform.tfvars and fill in your values
-gitlab_token = "glpat-xxxxxxxxxxxxxxxxxxxx"
-gitlab_base_url = "https://your-gitlab-domain.com/api/v4/"
-
-# Optional: Customize demo user info
-demo_user_email = "demo@example.com"
-demo_user_name = "Demo User"

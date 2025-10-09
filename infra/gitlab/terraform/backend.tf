@@ -5,6 +5,10 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 5.36" # recent
     }
+    gitlab = {
+      source  = "gitlabhq/gitlab"
+      version = "~> 16.0"
+    }
   }
   
   backend "gcs" {
