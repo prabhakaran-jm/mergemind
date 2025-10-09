@@ -1,0 +1,9 @@
+# Slack bot dependencies
+slack-bolt==1.18.1
+slack-sdk==3.23.0
+
+# HTTP client
+aiohttp==3.9.1
+
+# Utilities
+python-dotenv==1.0.0
