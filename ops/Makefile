@@ -48,16 +48,26 @@ dbt.ls:
 # Data seeding
 seed:
 	@echo "Seeding demo data..."
-	./ops/scripts/seed_demo.sh
+	bash ops/scripts/seed_demo.sh
 
 # Deployment targets
 deploy.api:
 	@echo "Deploying API to Cloud Run..."
-	./ops/scripts/deploy_api.sh
+	bash ops/scripts/deploy_api.sh
 
 deploy.bot:
 	@echo "Deploying Slack bot to Cloud Run..."
-	./ops/scripts/deploy_bot.sh
+	bash ops/scripts/deploy_bot.sh
+
+deploy.ui:
+	@echo "Deploying UI to Cloud Run..."
+	bash ops/scripts/deploy_ui.sh
+
+deploy.all:
+	@echo "Deploying all services to Cloud Run..."
+	bash ops/scripts/deploy_api.sh
+	bash ops/scripts/deploy_ui.sh
+	bash ops/scripts/deploy_bot.sh
 
 # Cleanup
 clean:
