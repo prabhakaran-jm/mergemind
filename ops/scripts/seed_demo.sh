@@ -9,7 +9,7 @@ set -e
 PROJECT_ID=${GCP_PROJECT_ID:-"your-project-id"}
 DATASET_RAW=${BQ_DATASET_RAW:-"mergemind_raw"}
 DATASET_MODELED=${BQ_DATASET_MODELED:-"mergemind"}
-LOCATION=${VERTEX_LOCATION:-"europe-west2"}
+LOCATION=${VERTEX_LOCATION:-"us-central1"}
 
 echo "Seeding demo data for MergeMind..."
 echo "Project: $PROJECT_ID"

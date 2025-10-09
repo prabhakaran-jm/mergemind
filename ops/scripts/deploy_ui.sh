@@ -8,7 +8,7 @@ set -e
 # Configuration
 PROJECT_ID=${GCP_PROJECT_ID:-"your-project-id"}
 SERVICE_NAME="mergemind-ui"
-REGION=${VERTEX_LOCATION:-"europe-west2"}
+REGION=${VERTEX_LOCATION:-"us-central1"}
 IMAGE_NAME="gcr.io/$PROJECT_ID/$SERVICE_NAME"
 API_URL=${API_BASE_URL:-"https://mergemind-api-xxxxx-uc.a.run.app"}
 
