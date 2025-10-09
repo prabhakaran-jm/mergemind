@@ -116,3 +116,8 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+
+# GitLab Demo Resources - Sensitive files
+infra/gitlab/terraform/terraform.tfvars
+infra/gitlab/terraform/demo-resources.tfplan
+infra/gitlab/terraform/*.tfplan
