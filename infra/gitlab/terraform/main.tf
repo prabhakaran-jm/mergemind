@@ -36,6 +36,14 @@ resource "google_compute_firewall" "gitlab_fw" {
   target_tags   = ["gitlab"]
 }
 
+# Secondary SSD disk for GitLab data
+resource "google_compute_disk" "gitlab_data" {
+  name  = "gitlab-data-disk"
+  type  = "pd-ssd"
+  size  = 50
+  zone  = var.zone
+}
+
 # GitLab VM
 resource "google_compute_instance" "gitlab" {
   name         = "gitlab-ce"
@@ -57,16 +65,9 @@ resource "google_compute_instance" "gitlab" {
 
   # Secondary SSD for GitLab data
   attached_disk {
+    source      = google_compute_disk.gitlab_data.self_link
     device_name = "gitlab-data"
-    type        = "PERSISTENT"
     mode        = "READ_WRITE"
-    disk_encryption_key_raw = null
-    # Create disk inline:
-    initialize_params {
-      size  = 50
-      type  = "pd-ssd"
-    }
-    auto_delete = true
   }
 
   network_interface {
