@@ -86,10 +86,15 @@ service-account-key.json
 .cache/
 
 # Environment files
+.env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Fivetran connector config
+ingestion/fivetran_connector/config.env
+ingestion/fivetran_connector/config.env.local
 
 # Secrets
 secrets/

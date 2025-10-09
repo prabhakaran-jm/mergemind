@@ -76,7 +76,8 @@ pip install -r requirements.txt
 2. Configure environment variables:
 ```bash
 cp config.env.example config.env
-# Edit config.env with your settings
+# Edit config.env with your actual GitLab settings
+# Note: config.env is gitignored and should not be committed
 ```
 
 3. Run the connector:
