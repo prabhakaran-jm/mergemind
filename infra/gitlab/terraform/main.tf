@@ -14,10 +14,29 @@ provider "google" {
   zone    = var.zone
 }
 
+# Enable required Google Cloud APIs
+resource "google_project_service" "compute_api" {
+  project = var.project_id
+  service = "compute.googleapis.com"
+  
+  disable_dependent_services = false
+  disable_on_destroy         = false
+}
+
+resource "google_project_service" "cloudresourcemanager_api" {
+  project = var.project_id
+  service = "cloudresourcemanager.googleapis.com"
+  
+  disable_dependent_services = false
+  disable_on_destroy         = false
+}
+
 # Static external IP
 resource "google_compute_address" "gitlab_ip" {
   name   = "gitlab-static-ip"
   region = var.region
+  
+  depends_on = [google_project_service.compute_api]
 }
 
 # Firewall: 22, 80, 443 (targets instances with tag "gitlab")
@@ -34,6 +53,8 @@ resource "google_compute_firewall" "gitlab_fw" {
   priority      = 1000
   source_ranges = ["0.0.0.0/0"]
   target_tags   = ["gitlab"]
+  
+  depends_on = [google_project_service.compute_api]
 }
 
 # Secondary SSD disk for GitLab data
@@ -42,6 +63,8 @@ resource "google_compute_disk" "gitlab_data" {
   type  = "pd-ssd"
   size  = 50
   zone  = var.zone
+  
+  depends_on = [google_project_service.compute_api]
 }
 
 # GitLab VM
@@ -100,4 +123,6 @@ resource "google_compute_instance" "gitlab" {
       "https://www.googleapis.com/auth/devstorage.read_write"
     ]
   }
+  
+  depends_on = [google_project_service.compute_api]
 }
