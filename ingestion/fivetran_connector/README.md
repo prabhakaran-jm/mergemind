@@ -1,195 +1,101 @@
 # GitLab Fivetran Connector
 
-A production-ready Fivetran connector for extracting GitLab merge request data and related information.
-
-## Overview
-
-This connector extracts comprehensive data from GitLab projects including:
-- Merge requests with metadata and status
-- Comments, reviews, and approvals
-- CI/CD pipeline runs
-- Project information
-- User profiles and activity
+A production-ready custom Fivetran connector that extracts data from GitLab API and syncs it to BigQuery with incremental sync support.
 
 ## Features
 
-- **Incremental Sync**: Only syncs data changed since last run
-- **Comprehensive Data**: Covers all aspects of MR lifecycle
-- **Error Handling**: Robust retry logic and error recovery
-- **Schema Management**: Automatic schema detection and updates
-- **Performance**: Optimized for large GitLab instances
+- **Incremental Syncs**: Only fetches changed data using `last_sync_time`
+- **Batch Processing**: Eliminates N+1 API calls with batch user fetching
+- **Configurable Tables**: Enable/disable specific tables (projects, merge_requests, users)
+- **Start Date Limiting**: Control historical data fetch on first sync
+- **Checkpointing**: Resilient to failures with progress saving
+- **Error Handling**: Comprehensive error handling with specific HTTP status codes
 
-## Tables
+## Files
 
-### merge_requests
-Core merge request data including titles, descriptions, status, and metadata.
+- `connector.py` - Main connector code with incremental sync support
+- `requirements.txt` - Python dependencies (minimal)
+- `config.env.example` - Environment variables template
+- `configuration_example.json` - Configuration template
 
-### mr_notes
-Comments, reviews, and approvals on merge requests with classification.
+## Quick Start
 
-### pipelines
-CI/CD pipeline runs associated with merge requests.
+1. **Setup Configuration:**
+   ```bash
+   # Copy example configuration
+   cp configuration_example.json configuration.json
+   
+   # Update with your values
+   # - gitlab_token: Your GitLab Personal Access Token
+   # - gitlab_base_url: Your GitLab instance URL
+   # - gitlab_project_ids: Comma-separated project IDs
+   ```
+
+2. **Test Locally:**
+   ```bash
+   fivetran debug --configuration configuration.json
+   ```
+
+3. **Deploy to Fivetran:**
+   ```bash
+   fivetran deploy --api-key YOUR_API_KEY --destination YOUR_DESTINATION --connection gitlab_connector --configuration configuration.json
+   ```
+
+## Configuration Options
+
+### Required
+- `gitlab_token` - GitLab Personal Access Token
+- `gitlab_base_url` - GitLab instance URL
+- `gitlab_project_ids` - Comma-separated project IDs
+
+### Optional
+- `start_date` - Limit historical data (ISO format: "2025-01-01T00:00:00Z")
+- `sync_projects_table` - Enable projects sync ("true"/"false")
+- `sync_merge_requests_table` - Enable merge requests sync ("true"/"false")
+- `sync_users_table` - Enable users sync ("true"/"false")
+- `max_records_per_sync` - Maximum records per sync ("10000")
+- `sync_interval_hours` - Sync interval in hours ("1")
+
+## Data Schema
+
+The connector creates three tables:
 
 ### projects
-GitLab project and repository information.
+- `id`, `name`, `description`, `web_url`
+- `created_at`, `updated_at`, `visibility`, `default_branch`
+
+### merge_requests
+- `id`, `project_id`, `title`, `description`, `state`
+- `author_id`, `assignee_id`, `created_at`, `updated_at`
+- `merged_at`, `closed_at`, `source_branch`, `target_branch`, `web_url`
 
 ### users
-User profiles and activity data.
+- `id`, `username`, `name`, `email`, `state`
+- `created_at`, `last_activity_on`
 
-## Configuration
+## Performance Features
 
-### Required Environment Variables
+- **Incremental Syncs**: Only fetches data updated since last sync
+- **Batch User Fetching**: Single API call for multiple users
+- **Start Date Limiting**: Prevents full historical data fetch
+- **Checkpointing**: Saves progress between table processing
 
-```bash
-# GitLab API access
-GITLAB_TOKEN=your-gitlab-token
-GITLAB_BASE_URL=https://gitlab.com  # Optional, defaults to gitlab.com
+## Security
 
-# Projects to sync
-GITLAB_PROJECT_IDS=100,101,102  # Comma-separated project IDs
-```
+- All sensitive configuration is excluded from version control
+- Uses Fivetran's encrypted secrets management
+- No hardcoded credentials in source code
 
-### Optional Configuration
+## Current Status
 
-```bash
-# Sync settings
-SYNC_INTERVAL_HOURS=1
-MAX_RECORDS_PER_SYNC=10000
+✅ **Production Ready**: Fully functional with incremental syncs  
+✅ **Tested**: Successfully tested with GitLab API  
+✅ **Scalable**: Handles large datasets efficiently  
+✅ **Secure**: No sensitive data in repository  
 
-# Data processing
-ENABLE_NOTE_CLASSIFICATION=true
-ENABLE_USER_DEDUPLICATION=true
-ENABLE_PIPELINE_ANALYSIS=true
+## Next Steps
 
-# Logging
-LOG_LEVEL=INFO
-LOG_FORMAT=json
-```
-
-## Installation
-
-1. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-2. Configure environment variables:
-```bash
-cp config.env.example config.env
-# Edit config.env with your actual GitLab settings
-# Note: config.env is gitignored and should not be committed
-```
-
-3. Run the connector:
-```bash
-python connector.py
-```
-
-## Usage
-
-### Basic Usage
-
-```python
-from connector import GitLabConnector
-
-# Initialize connector
-connector = GitLabConnector()
-
-# Get schema
-schema = connector.get_schema()
-
-# Read data
-for record in connector.read('merge_requests'):
-    print(record)
-```
-
-### Fivetran Integration
-
-The connector implements the Fivetran SDK interface:
-
-```python
-from fivetran_sdk import Connector
-
-class GitLabConnector(Connector):
-    def get_schema(self):
-        # Return table definitions
-        pass
-    
-    def read(self, table, last_sync_time=None):
-        # Return data iterator
-        pass
-```
-
-## Data Processing
-
-### Note Classification
-Automatically classifies notes as:
-- **approval**: Contains approval keywords
-- **review**: Contains review-related terms
-- **comment**: General comments
-
-### Incremental Sync
-- Uses `updated_at` timestamps for incremental updates
-- Only processes changed records since last sync
-- Handles pagination automatically
-
-### Error Handling
-- Automatic retries with exponential backoff
-- Graceful handling of API rate limits
-- Comprehensive logging for debugging
-
-## Testing
-
-Run the test suite:
-
-```bash
-pytest tests/test_connector.py -v
-```
-
-## Schema Evolution
-
-The connector handles schema changes automatically:
-- New columns are added dynamically
-- Data types are inferred from API responses
-- Backward compatibility is maintained
-
-## Performance Considerations
-
-- **Pagination**: Handles large datasets efficiently
-- **Rate Limiting**: Respects GitLab API limits
-- **Memory Usage**: Streams data to avoid memory issues
-- **Parallel Processing**: Can be configured for multiple projects
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Authentication Errors**
-   - Verify `GITLAB_TOKEN` is valid
-   - Check token permissions
-
-2. **Rate Limiting**
-   - Increase `RETRY_DELAY_SECONDS`
-   - Reduce `MAX_RECORDS_PER_SYNC`
-
-3. **Schema Errors**
-   - Check API response format
-   - Verify column data types
-
-### Debugging
-
-Enable debug logging:
-```bash
-LOG_LEVEL=DEBUG python connector.py
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Submit a pull request
-
-## License
-
-MIT License - see LICENSE file for details.
+1. Deploy to Fivetran
+2. Link to BigQuery destination
+3. Monitor sync performance
+4. Scale to additional projects

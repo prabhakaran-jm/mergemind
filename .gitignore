@@ -95,6 +95,10 @@ service-account-key.json
 # Fivetran connector config
 ingestion/fivetran_connector/config.env
 ingestion/fivetran_connector/config.env.local
+ingestion/fivetran_connector/configuration.json
+ingestion/fivetran_connector/files/
+ingestion/fivetran_connector/myenv/
+ingestion/fivetran_connector/__pycache__/
 
 # Secrets
 secrets/

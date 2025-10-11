@@ -1,0 +1,11 @@
+{
+  "gitlab_token": "glpat-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "gitlab_base_url": "https://XX.XXX.XX.XXX.sslip.io",
+  "gitlab_project_ids": "4,5,6",
+  "start_date": "2025-01-01T00:00:00Z",
+  "sync_projects_table": "true",
+  "sync_merge_requests_table": "false",
+  "sync_users_table": "true",
+  "max_records_per_sync": "5000",
+  "sync_interval_hours": "2"
+}

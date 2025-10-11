@@ -32,6 +32,7 @@ This will automatically:
 - Configure terraform.tfvars and backend.tf
 - Initialize Terraform
 - Deploy infrastructure
+- Create demo GitLab projects
 
 ### 2. Manual Setup (Alternative)
 
@@ -82,6 +83,30 @@ gcloud compute ssh gitlab-ce --command "sudo cat /etc/gitlab/initial_root_passwo
 # Open GitLab in browser
 echo "https://${HOST}"
 ```
+
+### 6. Populate Demo Projects
+
+After GitLab is running and you have created a Personal Access Token:
+
+```bash
+cd infra/gitlab/scripts
+
+# Copy and configure environment
+cp config.env.example config.env
+# Edit config.env with your GitLab URL and token
+
+# Install Python dependencies
+pip install requests python-dotenv
+
+# Populate projects with sample content
+python populate_gitlab_projects.py
+```
+
+This will add:
+- Sample files (README, package.json, source code)
+- Feature branches
+- Merge requests with detailed descriptions
+- Issues with labels
 
 ## 🔧 Configuration Options
 
