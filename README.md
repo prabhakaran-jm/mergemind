@@ -1,257 +1,576 @@
 # MergeMind
 
-AI-powered GitLab merge request analysis and reviewer suggestions.
+AI-powered merge request analysis and insights platform for GitLab, providing risk scoring, reviewer suggestions, and automated summaries.
 
-## Overview
+## 🚀 Features
 
-MergeMind is an intelligent system that analyzes GitLab merge requests to provide risk scoring, AI-generated summaries, reviewer suggestions, and actionable insights. Built with modern cloud technologies and designed for scalability.
+- **AI-Powered Analysis**: Automated diff summarization using Vertex AI Gemini 1.5
+- **Risk Scoring**: Deterministic risk assessment for merge requests
+- **Reviewer Suggestions**: Intelligent reviewer recommendations based on co-review graph
+- **Real-time Insights**: Live MR analysis with risk badges and blocking detection
+- **Slack Integration**: Interactive Slack bot for MR analysis and notifications
+- **Comprehensive API**: RESTful API for all MR analysis features
+- **Modern UI**: React-based dashboard for MR management and analytics
 
-## Architecture
+## 📋 Table of Contents
 
-```
-GitLab → Fivetran → BigQuery → dbt → Vertex AI → FastAPI → React/Slack
-```
+- [Quick Start](#quick-start)
+- [Architecture](#architecture)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [API Documentation](#api-documentation)
+- [Deployment](#deployment)
+- [Monitoring](#monitoring)
+- [Security](#security)
+- [Contributing](#contributing)
+- [License](#license)
 
-## Features
-
-- **Risk Scoring**: Deterministic risk analysis based on MR characteristics
-- **AI Summaries**: Vertex AI-powered diff analysis with risk identification
-- **Reviewer Suggestions**: Co-review graph-based reviewer recommendations
-- **Real-time Insights**: Live MR monitoring with blocking issue detection
-- **Slack Integration**: Rich slash commands for MR analysis
-- **Observability**: Comprehensive logging, metrics, and SLO monitoring
-
-## Quick Start
+## 🏃‍♂️ Quick Start
 
 ### Prerequisites
 
 - Python 3.11+
 - Node.js 18+
-- Google Cloud SDK
-- Docker
-- GitLab account with API access
+- Google Cloud Platform account
+- GitLab instance (self-hosted or GitLab.com)
+- Fivetran account (for data ingestion)
 
-### Environment Setup
+### Local Development
 
-1. Clone the repository:
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/mergemind/mergemind.git
+   cd mergemind
+   ```
+
+2. **Set up environment**
+   ```bash
+   # Copy environment template
+   cp .env.example .env
+   
+   # Edit configuration
+   nano .env
+   ```
+
+3. **Install dependencies**
+   ```bash
+   # Install API dependencies
+   cd api/fastapi_app
+   pip install -r requirements.txt
+   
+   # Install UI dependencies
+   cd ../../ui/react_app
+   npm install
+   ```
+
+4. **Start services**
+   ```bash
+   # Start API (terminal 1)
+   cd api/fastapi_app
+   uvicorn main:app --reload --port 8080
+   
+   # Start UI (terminal 2)
+   cd ui/react_app
+   npm run dev
+   ```
+
+5. **Access the application**
+   - API: http://localhost:8080
+   - UI: http://localhost:5173
+   - API Docs: http://localhost:8080/docs
+
+## 🏗️ Architecture
+
+```mermaid
+graph TB
+    subgraph "Data Sources"
+        GL[GitLab API]
+        FV[Fivetran Connector]
+    end
+    
+    subgraph "Data Layer"
+        BQ[BigQuery]
+        dbt[dbt Models]
+    end
+    
+    subgraph "AI Services"
+        VAI[Vertex AI]
+        RS[Reviewer Service]
+        RISK[Risk Service]
+        SUM[Summary Service]
+    end
+    
+    subgraph "API Layer"
+        API[FastAPI]
+        AUTH[Authentication]
+        RATE[Rate Limiting]
+    end
+    
+    subgraph "Frontend"
+        UI[React App]
+        DASH[Dashboard]
+        BOT[Slack Bot]
+    end
+    
+    subgraph "Infrastructure"
+        GCP[Google Cloud]
+        RUN[Cloud Run]
+        LB[Load Balancer]
+    end
+    
+    GL --> FV
+    FV --> BQ
+    BQ --> dbt
+    dbt --> API
+    API --> VAI
+    API --> RS
+    API --> RISK
+    API --> SUM
+    API --> UI
+    API --> BOT
+    UI --> DASH
+    API --> RUN
+    RUN --> LB
+    LB --> GCP
+```
+
+### Core Components
+
+- **Data Ingestion**: Fivetran custom connector for GitLab data
+- **Data Warehouse**: BigQuery with dbt for data modeling
+- **AI Services**: Vertex AI for diff summarization and analysis
+- **API Layer**: FastAPI with comprehensive endpoints
+- **Frontend**: React dashboard for MR management
+- **Slack Integration**: Interactive bot for team collaboration
+
+## 📦 Installation
+
+### Docker Compose (Recommended)
+
 ```bash
-git clone https://github.com/prabhakaran-jm/mergemind.git
+# Clone repository
+git clone https://github.com/mergemind/mergemind.git
 cd mergemind
+
+# Copy environment file
+cp .env.example .env
+
+# Edit configuration
+nano .env
+
+# Start services
+docker-compose up -d
+
+# Check status
+docker-compose ps
 ```
 
-2. Copy environment configuration:
+### Manual Installation
+
+#### 1. API Setup
+
 ```bash
-cp ops/env/env.example .env
+cd api/fastapi_app
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run tests
+python run_tests.py
+
+# Start development server
+uvicorn main:app --reload --port 8080
 ```
 
-3. Configure environment variables in `.env`:
+#### 2. UI Setup
+
 ```bash
-# Required
+cd ui/react_app
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+```
+
+#### 3. Data Pipeline Setup
+
+```bash
+cd warehouse/bigquery/dbt
+
+# Install dbt
+pip install dbt-bigquery
+
+# Install dbt packages
+dbt deps
+
+# Run models
+dbt run
+
+# Run tests
+dbt test
+```
+
+## ⚙️ Configuration
+
+### Environment Variables
+
+```bash
+# GCP Configuration
 GCP_PROJECT_ID=your-project-id
-GITLAB_TOKEN=your-gitlab-token
-SLACK_SIGNING_SECRET=your-slack-signing-secret
-SLACK_BOT_TOKEN=xoxb-your-slack-bot-token
-
-# Optional
 BQ_DATASET_RAW=mergemind_raw
 BQ_DATASET_MODELED=mergemind
-VERTEX_LOCATION=europe-west2
+VERTEX_LOCATION=us-central1
+
+# GitLab Configuration
+GITLAB_BASE_URL=https://your-gitlab.com
+GITLAB_TOKEN=glpat-your-token
+
+# Slack Configuration (Optional)
+SLACK_SIGNING_SECRET=your-signing-secret
+SLACK_BOT_TOKEN=xoxb-your-bot-token
+SLACK_COMMAND=/mergemind
+
+# API Configuration
+API_BASE_URL=https://api.mergemind.com
+LOG_LEVEL=INFO
+ENVIRONMENT=production
+
+# Security
+SECRET_KEY=your-secret-key
+ALLOWED_HOSTS=api.mergemind.com,mergemind.com
 ```
 
-### Development
+### BigQuery Setup
 
-1. **Seed demo data**:
-```bash
-make seed
+```sql
+-- Create datasets
+CREATE SCHEMA `mergemind_raw`;
+CREATE SCHEMA `mergemind`;
+
+-- Create tables with schemas
+CREATE TABLE `mergemind_raw.merge_requests` (
+  mr_id INT64,
+  project_id INT64,
+  title STRING,
+  description STRING,
+  author_id INT64,
+  state STRING,
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP,
+  additions INT64,
+  deletions INT64,
+  web_url STRING
+);
+
+CREATE TABLE `mergemind_raw.mr_notes` (
+  id INT64,
+  mr_id INT64,
+  author_id INT64,
+  note_type STRING,
+  body STRING,
+  created_at TIMESTAMP
+);
+
+CREATE TABLE `mergemind_raw.users` (
+  user_id INT64,
+  username STRING,
+  name STRING,
+  email STRING,
+  state STRING,
+  created_at TIMESTAMP
+);
+
+CREATE TABLE `mergemind_raw.projects` (
+  project_id INT64,
+  name STRING,
+  description STRING,
+  visibility STRING,
+  created_at TIMESTAMP
+);
+
+CREATE TABLE `mergemind_raw.pipelines` (
+  pipeline_id INT64,
+  project_id INT64,
+  status STRING,
+  ref STRING,
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
+);
 ```
 
-2. **Start API server**:
+### dbt Models
+
 ```bash
-make dev.api
+cd warehouse/bigquery/dbt
+
+# Install packages
+dbt deps
+
+# Run models
+dbt run
+
+# Test models
+dbt test
+
+# Generate documentation
+dbt docs generate
+dbt docs serve
 ```
 
-3. **Start UI server** (in another terminal):
+## 📚 API Documentation
+
+### Base URL
+- **Development**: `http://localhost:8080/api/v1`
+- **Production**: `https://api.mergemind.com/api/v1`
+
+### Authentication
+Currently no authentication required for MVP. Future versions will support API keys and OAuth.
+
+### Endpoints
+
+#### Health Check
+- `GET /healthz` - Basic health check
+- `GET /ready` - Readiness check with dependency validation
+- `GET /health/detailed` - Comprehensive health check with metrics
+
+#### Merge Requests
+- `GET /mrs` - List merge requests with risk analysis
+- `GET /blockers/top` - Get top blocking merge requests
+
+#### Individual MR
+- `GET /mr/{id}/context` - Get comprehensive MR context
+- `POST /mr/{id}/summary` - Generate AI summary
+- `GET /mr/{id}/reviewers` - Get suggested reviewers
+- `GET /mr/{id}/risk` - Get risk analysis
+- `GET /mr/{id}/stats` - Get MR statistics
+
+#### Metrics
+- `GET /metrics` - Get application metrics
+- `GET /metrics/slo` - Get SLO status and violations
+- `POST /metrics/reset` - Reset metrics (admin only)
+
+### Example Usage
+
 ```bash
-make dev.ui
-```
-
-4. **Run dbt models**:
-```bash
-make dbt.run
-make dbt.test
-```
-
-### Testing
-
-Test the API endpoints:
-```bash
-# Health check
-curl http://localhost:8080/api/v1/healthz
-
-# List MRs
-curl http://localhost:8080/api/v1/mrs
+# List open merge requests
+curl "https://api.mergemind.com/api/v1/mrs?state=open&limit=20"
 
 # Get MR context
-curl http://localhost:8080/api/v1/mr/1/context
+curl "https://api.mergemind.com/api/v1/mr/123/context"
 
-# Generate summary
-curl -X POST http://localhost:8080/api/v1/mr/1/summary
+# Generate AI summary
+curl -X POST "https://api.mergemind.com/api/v1/mr/123/summary"
 
-# Get reviewers
-curl http://localhost:8080/api/v1/mr/1/reviewers
+# Get reviewer suggestions
+curl "https://api.mergemind.com/api/v1/mr/123/reviewers"
+
+# Get risk analysis
+curl "https://api.mergemind.com/api/v1/mr/123/risk"
 ```
 
-## Project Structure
+For complete API documentation, see [API Reference](docs/API_REFERENCE.md).
 
-```
-mergemind/
-├── api/fastapi_app/          # FastAPI application
-├── ai/                       # AI services (scoring, reviewers, summarizer)
-├── bots/slack/               # Slack bot implementation
-├── docs/                     # Documentation and prompts
-├── infra/cloudrun/           # Cloud Run configurations
-├── ops/                      # Operations scripts and configs
-├── ui/web/                   # React frontend
-└── warehouse/bigquery/dbt/   # dbt models and configurations
-```
+## 🚀 Deployment
 
-## API Endpoints
-
-### Health & Monitoring
-- `GET /api/v1/healthz` - Basic health check
-- `GET /api/v1/ready` - Readiness check
-- `GET /api/v1/health/detailed` - Detailed health with metrics
-- `GET /api/v1/metrics` - Application metrics
-- `GET /api/v1/metrics/slo` - SLO violation status
-
-### Merge Requests
-- `GET /api/v1/mrs` - List MRs with risk badges
-- `GET /api/v1/mr/{id}/context` - Get MR context
-- `POST /api/v1/mr/{id}/summary` - Generate AI summary
-- `GET /api/v1/mr/{id}/reviewers` - Get reviewer suggestions
-- `GET /api/v1/mr/{id}/risk` - Get risk analysis
-- `GET /api/v1/blockers/top` - Get top blocking MRs
-
-## Slack Commands
-
-- `/mergemind mr <id>` - Get MR insights
-- `/mergemind-stats` - View statistics
-- `/mergemind-blockers` - List blocking MRs
-- `/mergemind-help` - Show help
-
-## Deployment
-
-### Cloud Run Deployment
-
-1. **Deploy API**:
-```bash
-make deploy.api
-```
-
-2. **Deploy UI**:
-```bash
-make deploy.ui
-```
-
-3. **Deploy Slack Bot**:
-```bash
-make deploy.bot
-```
-
-4. **Deploy all services**:
-```bash
-make deploy.all
-```
-
-### Configuration
-
-Update environment variables:
-```bash
-gcloud run services update mergemind-api --region=europe-west2 --update-env-vars KEY=VALUE
-```
-
-Update secrets:
-```bash
-gcloud run services update mergemind-api --region=europe-west2 --update-secrets KEY=SECRET_NAME:VERSION
-```
-
-## Development Commands
+### Google Cloud Run (Recommended)
 
 ```bash
-# Development
-make dev.api          # Start API server
-make dev.ui           # Start UI server
+# Build and push Docker images
+docker build -t gcr.io/your-project/mergemind-api:latest api/fastapi_app/
+docker push gcr.io/your-project/mergemind-api:latest
 
-# dbt operations
-make dbt.deps         # Install dbt packages
-make dbt.run          # Run dbt models
-make dbt.test         # Test dbt models
-make dbt.compile      # Compile dbt models
+docker build -t gcr.io/your-project/mergemind-ui:latest ui/react_app/
+docker push gcr.io/your-project/mergemind-ui:latest
 
-# Data operations
-make seed             # Seed demo data
+# Deploy to Cloud Run
+gcloud run deploy mergemind-api \
+  --image gcr.io/your-project/mergemind-api:latest \
+  --platform managed \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --port 8080 \
+  --memory 2Gi \
+  --cpu 2 \
+  --max-instances 10
 
-# Deployment
-make deploy.api       # Deploy API
-make deploy.ui        # Deploy UI
-make deploy.bot       # Deploy Slack bot
-make deploy.all       # Deploy all services
-
-# Cleanup
-make clean            # Clean build artifacts
+gcloud run deploy mergemind-ui \
+  --image gcr.io/your-project/mergemind-ui:latest \
+  --platform managed \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --port 3000 \
+  --memory 512Mi \
+  --cpu 1 \
+  --max-instances 5
 ```
 
-## Observability
+### Kubernetes
 
-### Logging
-- Structured JSON logging with request IDs
-- Request/response timing and status codes
-- Error tracking and categorization
+```bash
+# Create cluster
+gcloud container clusters create mergemind-cluster \
+  --zone us-central1-a \
+  --num-nodes 3 \
+  --machine-type e2-standard-4
 
-### Metrics
-- Request count and error rates
-- Latency percentiles (P50, P95, P99)
-- Endpoint-specific performance metrics
-- SLO violation detection
+# Deploy with Helm
+helm install mergemind ./helm/mergemind \
+  --set gcp.projectId=your-project-id \
+  --set gitlab.baseUrl=https://your-gitlab.com
+```
+
+For detailed deployment instructions, see [Deployment Guide](docs/DEPLOYMENT.md).
+
+## 📊 Monitoring
 
 ### Health Checks
-- Basic health check (`/healthz`)
-- Readiness check (`/ready`)
-- Detailed health with dependencies (`/health/detailed`)
 
-## SLOs (Service Level Objectives)
+```bash
+# Basic health check
+curl "https://api.mergemind.com/api/v1/healthz"
 
-- **Error Rate**: < 1%
-- **P95 Latency**: < 2 seconds
-- **P99 Latency**: < 5 seconds
-- **Availability**: > 99.9%
+# Detailed health check
+curl "https://api.mergemind.com/api/v1/health/detailed"
 
-## Contributing
+# SLO status
+curl "https://api.mergemind.com/api/v1/metrics/slo"
+```
+
+### Metrics
+
+The application exposes Prometheus-compatible metrics:
+
+- Request count and duration
+- Error rates and types
+- Business metrics (MR analysis, AI summaries)
+- External service health
+
+### Alerting
+
+Configure alerts for:
+- High error rates (>1%)
+- High latency (P95 > 2s)
+- Service downtime
+- BigQuery quota exceeded
+- AI service failures
+
+For comprehensive monitoring setup, see [Monitoring Guide](docs/MONITORING.md).
+
+## 🔒 Security
+
+### Security Features
+
+- Input validation and sanitization
+- Rate limiting and DDoS protection
+- HTTPS enforcement
+- Security headers
+- Data encryption at rest and in transit
+- Access logging and audit trails
+
+### Compliance
+
+- GDPR compliance for data protection
+- SOC 2 Type II compliance
+- Security incident response plan
+- Regular security audits
+
+For detailed security information, see [Security Guide](docs/SECURITY.md).
+
+## 🧪 Testing
+
+### Run Tests
+
+```bash
+# API tests
+cd api/fastapi_app
+python run_tests.py
+
+# Run specific test types
+python run_tests.py --type unit
+python run_tests.py --type integration
+
+# Run with coverage
+python run_tests.py --coverage
+
+# UI tests
+cd ui/react_app
+npm test
+npm run test:coverage
+```
+
+### Test Coverage
+
+- **Unit Tests**: Service layer components
+- **Integration Tests**: End-to-end workflows
+- **API Tests**: Endpoint functionality
+- **Performance Tests**: Load and stress testing
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### Development Setup
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests if applicable
+4. Add tests
 5. Submit a pull request
 
-## License
+### Code Style
 
-See [LICENSE](LICENSE) file for details.
+- Python: Black, isort, flake8
+- JavaScript: Prettier, ESLint
+- TypeScript: Strict mode enabled
 
-## Support
+## 📄 License
 
-For issues and questions:
-- Create an issue in the repository
-- Check the [documentation](docs/)
-- Review the [operations guide](docs/ops-observability.md)
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Roadmap
+## 🆘 Support
 
-- [ ] Fine-tuned AI models for MR analysis
-- [ ] Time-to-merge forecasting
-- [ ] Flaky test detection
-- [ ] Policy linting and security scanning
-- [ ] Advanced analytics and reporting
-- [ ] Multi-repository support
-- [ ] Custom risk scoring rules
-- [ ] Integration with other Git platforms
+- **Documentation**: [docs/](docs/)
+- **Issues**: [GitHub Issues](https://github.com/mergemind/mergemind/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/mergemind/mergemind/discussions)
+- **Email**: support@mergemind.com
+
+## 🗺️ Roadmap
+
+### v1.1.0 (Q2 2024)
+- Authentication and authorization
+- Webhook notifications
+- Bulk operations
+- Advanced filtering and search
+
+### v1.2.0 (Q3 2024)
+- Real-time updates
+- Advanced analytics
+- Custom risk rules
+- Team collaboration features
+
+### v2.0.0 (Q4 2024)
+- Multi-repository support
+- Advanced AI models
+- Enterprise features
+- Self-hosted deployment
+
+## 🙏 Acknowledgments
+
+- [FastAPI](https://fastapi.tiangolo.com/) for the API framework
+- [React](https://reactjs.org/) for the frontend framework
+- [BigQuery](https://cloud.google.com/bigquery) for data warehousing
+- [Vertex AI](https://cloud.google.com/vertex-ai) for AI services
+- [Fivetran](https://fivetran.com/) for data ingestion
+
+---
+
+**MergeMind** - Making merge request analysis intelligent and efficient. 🚀

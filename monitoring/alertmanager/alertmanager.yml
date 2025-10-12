@@ -1,0 +1,129 @@
+# Alertmanager configuration for MergeMind
+global:
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'alerts@mergemind.com'
+  smtp_auth_username: 'alerts@mergemind.com'
+  smtp_auth_password: 'your-app-password'
+
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'default'
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 5s
+      repeat_interval: 30m
+    
+    # Warning alerts - delayed notification
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      group_wait: 30s
+      repeat_interval: 2h
+    
+    # Business alerts - daily summary
+    - match:
+        service: business
+      receiver: 'business-alerts'
+      group_wait: 1h
+      repeat_interval: 24h
+
+receivers:
+  - name: 'default'
+    email_configs:
+      - to: 'admin@mergemind.com'
+        subject: 'MergeMind Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          Alert: {{ .GroupLabels.alertname }}
+          Status: {{ .Status }}
+          Description: {{ .Annotations.description }}
+          Time: {{ .StartsAt }}
+          Runbook: {{ .Annotations.runbook_url }}
+
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'oncall@mergemind.com'
+        subject: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+        body: |
+          🚨 CRITICAL ALERT 🚨
+          
+          Alert: {{ .GroupLabels.alertname }}
+          Status: {{ .Status }}
+          Service: {{ .GroupLabels.service }}
+          Description: {{ .Annotations.description }}
+          Time: {{ .StartsAt }}
+          Runbook: {{ .Annotations.runbook_url }}
+          
+          Firing Alerts:
+          {{ range .Alerts }}
+          - {{ .Annotations.summary }}
+          {{ end }}
+    
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#alerts-critical'
+        title: '🚨 Critical Alert'
+        text: |
+          *Alert:* {{ .GroupLabels.alertname }}
+          *Status:* {{ .Status }}
+          *Service:* {{ .GroupLabels.service }}
+          *Description:* {{ .Annotations.description }}
+          *Time:* {{ .StartsAt }}
+          *Runbook:* {{ .Annotations.runbook_url }}
+    
+    pagerduty_configs:
+      - service_key: 'your-pagerduty-service-key'
+        description: '{{ .GroupLabels.alertname }}: {{ .Annotations.description }}'
+        severity: 'critical'
+
+  - name: 'warning-alerts'
+    email_configs:
+      - to: 'team@mergemind.com'
+        subject: '⚠️ WARNING: {{ .GroupLabels.alertname }}'
+        body: |
+          ⚠️ WARNING ALERT ⚠️
+          
+          Alert: {{ .GroupLabels.alertname }}
+          Status: {{ .Status }}
+          Service: {{ .GroupLabels.service }}
+          Description: {{ .Annotations.description }}
+          Time: {{ .StartsAt }}
+          Runbook: {{ .Annotations.runbook_url }}
+    
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#alerts-warning'
+        title: '⚠️ Warning Alert'
+        text: |
+          *Alert:* {{ .GroupLabels.alertname }}
+          *Status:* {{ .Status }}
+          *Service:* {{ .GroupLabels.service }}
+          *Description:* {{ .Annotations.description }}
+          *Time:* {{ .StartsAt }}
+
+  - name: 'business-alerts'
+    email_configs:
+      - to: 'business@mergemind.com'
+        subject: '📊 Business Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          📊 BUSINESS ALERT 📊
+          
+          Alert: {{ .GroupLabels.alertname }}
+          Status: {{ .Status }}
+          Description: {{ .Annotations.description }}
+          Time: {{ .StartsAt }}
+          
+          This is a business metric alert that may require attention.
+
+inhibit_rules:
+  # Inhibit warning alerts when critical alerts are firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'cluster', 'service']

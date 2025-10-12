@@ -1,0 +1,177 @@
+# Alert rules for MergeMind monitoring
+groups:
+  - name: mergemind-critical
+    rules:
+      # Service Down
+      - alert: ServiceDown
+        expr: up{job="mergemind-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: api
+        annotations:
+          summary: "MergeMind API is down"
+          description: "API service has been down for more than 1 minute"
+          runbook_url: "https://docs.mergemind.com/runbooks/service-down"
+
+      # High Error Rate
+      - alert: HighErrorRate
+        expr: rate(mergemind_errors_total[5m]) / rate(mergemind_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          service: api
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes"
+          runbook_url: "https://docs.mergemind.com/runbooks/high-error-rate"
+
+      # High Latency
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, mergemind_request_duration_seconds_bucket) > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+        annotations:
+          summary: "High latency detected"
+          description: "95th percentile latency is {{ $value }}s"
+          runbook_url: "https://docs.mergemind.com/runbooks/high-latency"
+
+      # BigQuery Quota Exceeded
+      - alert: BigQueryQuotaExceeded
+        expr: rate(bigquery_job_total_bytes_processed[1h]) > 1000000000
+        for: 1m
+        labels:
+          severity: warning
+          service: bigquery
+        annotations:
+          summary: "BigQuery quota exceeded"
+          description: "BigQuery processing rate is {{ $value | humanizeBytes }}/hour"
+          runbook_url: "https://docs.mergemind.com/runbooks/bigquery-quota"
+
+  - name: mergemind-warning
+    rules:
+      # High CPU Usage
+      - alert: HighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: infrastructure
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value | humanizePercentage }}"
+          runbook_url: "https://docs.mergemind.com/runbooks/high-cpu"
+
+      # High Memory Usage
+      - alert: HighMemoryUsage
+        expr: container_memory_usage_bytes / container_spec_memory_limit_bytes > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: infrastructure
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+          runbook_url: "https://docs.mergemind.com/runbooks/high-memory"
+
+      # Disk Space Low
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: infrastructure
+        annotations:
+          summary: "Disk space low"
+          description: "Disk space is {{ $value | humanizePercentage }} available"
+          runbook_url: "https://docs.mergemind.com/runbooks/disk-space"
+
+      # GitLab API Rate Limit
+      - alert: GitLabRateLimit
+        expr: gitlab_api_rate_limit_remaining < 100
+        for: 2m
+        labels:
+          severity: warning
+          service: gitlab
+        annotations:
+          summary: "GitLab API rate limit low"
+          description: "GitLab API rate limit remaining: {{ $value }}"
+          runbook_url: "https://docs.mergemind.com/runbooks/gitlab-rate-limit"
+
+  - name: mergemind-business
+    rules:
+      # Low MR Analysis Rate
+      - alert: LowMRAnalysisRate
+        expr: rate(mergemind_mr_analysis_total[1h]) < 10
+        for: 30m
+        labels:
+          severity: warning
+          service: business
+        annotations:
+          summary: "Low MR analysis rate"
+          description: "MR analysis rate is {{ $value }} per hour"
+          runbook_url: "https://docs.mergemind.com/runbooks/low-mr-analysis"
+
+      # AI Service Failures
+      - alert: AIServiceFailures
+        expr: rate(mergemind_ai_summary_total{status="error"}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: ai
+        annotations:
+          summary: "AI service failures"
+          description: "AI summary failure rate is {{ $value }} per second"
+          runbook_url: "https://docs.mergemind.com/runbooks/ai-service-failures"
+
+      # Vertex AI Quota Exceeded
+      - alert: VertexAIQuotaExceeded
+        expr: vertex_ai_quota_usage > 0.9
+        for: 1m
+        labels:
+          severity: warning
+          service: vertex-ai
+        annotations:
+          summary: "Vertex AI quota exceeded"
+          description: "Vertex AI quota usage is {{ $value | humanizePercentage }}"
+          runbook_url: "https://docs.mergemind.com/runbooks/vertex-ai-quota"
+
+      # Data Pipeline Delays
+      - alert: DataPipelineDelays
+        expr: time() - mergemind_last_data_sync_timestamp > 3600
+        for: 5m
+        labels:
+          severity: warning
+          service: data-pipeline
+        annotations:
+          summary: "Data pipeline delays"
+          description: "Last data sync was {{ $value | humanizeDuration }} ago"
+          runbook_url: "https://docs.mergemind.com/runbooks/data-pipeline-delays"
+
+  - name: mergemind-slo
+    rules:
+      # SLO Violations
+      - alert: SLOViolation
+        expr: mergemind_slo_violations > 0
+        for: 1m
+        labels:
+          severity: critical
+          service: slo
+        annotations:
+          summary: "SLO violation detected"
+          description: "{{ $value }} SLO violations detected"
+          runbook_url: "https://docs.mergemind.com/runbooks/slo-violations"
+
+      # Error Budget Exhausted
+      - alert: ErrorBudgetExhausted
+        expr: mergemind_error_budget_remaining < 0.1
+        for: 5m
+        labels:
+          severity: critical
+          service: slo
+        annotations:
+          summary: "Error budget exhausted"
+          description: "Error budget remaining: {{ $value | humanizePercentage }}"
+          runbook_url: "https://docs.mergemind.com/runbooks/error-budget"

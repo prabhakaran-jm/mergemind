@@ -1,0 +1,243 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "MergeMind Overview",
+    "tags": ["mergemind"],
+    "style": "dark",
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Request Rate",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "rate(mergemind_requests_total[5m])",
+            "legendFormat": "{{method}} {{endpoint}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Requests/sec",
+            "min": 0
+          }
+        ],
+        "xAxis": {
+          "show": true
+        },
+        "legend": {
+          "show": true,
+          "values": true,
+          "current": true,
+          "max": true,
+          "min": true,
+          "avg": true
+        }
+      },
+      {
+        "id": 2,
+        "title": "Error Rate",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "rate(mergemind_errors_total[5m]) / rate(mergemind_requests_total[5m])",
+            "legendFormat": "Error Rate",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Error Rate",
+            "min": 0,
+            "max": 1
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 0.01,
+            "colorMode": "critical",
+            "op": "gt"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Response Time",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, mergemind_request_duration_seconds_bucket)",
+            "legendFormat": "95th percentile",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.50, mergemind_request_duration_seconds_bucket)",
+            "legendFormat": "50th percentile",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Response Time (s)",
+            "min": 0
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 2,
+            "colorMode": "critical",
+            "op": "gt"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "MR Analysis Rate",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(mergemind_mr_analysis_total[1h])",
+            "legendFormat": "{{analysis_type}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Analyses/hour",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "AI Summary Generation",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        },
+        "targets": [
+          {
+            "expr": "rate(mergemind_ai_summary_total[1h])",
+            "legendFormat": "AI Summaries",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Summaries/hour",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Reviewer Suggestions",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        },
+        "targets": [
+          {
+            "expr": "rate(mergemind_reviewer_suggestions_total[1h])",
+            "legendFormat": "Reviewer Suggestions",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Suggestions/hour",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "System Health",
+        "type": "stat",
+        "gridPos": {
+          "h": 4,
+          "w": 24,
+          "x": 0,
+          "y": 24
+        },
+        "targets": [
+          {
+            "expr": "up{job=\"mergemind-api\"}",
+            "legendFormat": "API Status",
+            "refId": "A"
+          },
+          {
+            "expr": "up{job=\"bigquery-exporter\"}",
+            "legendFormat": "BigQuery Status",
+            "refId": "B"
+          },
+          {
+            "expr": "up{job=\"gitlab-exporter\"}",
+            "legendFormat": "GitLab Status",
+            "refId": "C"
+          },
+          {
+            "expr": "up{job=\"vertex-ai-exporter\"}",
+            "legendFormat": "Vertex AI Status",
+            "refId": "D"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "red",
+                  "value": 0
+                },
+                {
+                  "color": "green",
+                  "value": 1
+                }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  }
+}

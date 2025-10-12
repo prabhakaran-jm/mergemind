@@ -7,6 +7,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 
 from services.bigquery_client import bigquery_client
+from services.user_service import user_service
 from ai.reviewers.suggest import ReviewerSuggester
 
 logger = logging.getLogger(__name__)
@@ -18,7 +19,8 @@ class ReviewerService:
     def __init__(self):
         """Initialize reviewer service."""
         self.bq_client = bigquery_client
-        self.suggester = ReviewerSuggester(bigquery_client)
+        self.user_service = user_service
+        self.suggester = ReviewerSuggester(bigquery_client, user_service)
     
     def suggest_reviewers(self, mr_id: int) -> List[Dict[str, Any]]:
         """

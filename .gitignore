@@ -125,3 +125,33 @@ override.tf.json
 infra/gitlab/terraform/terraform.tfvars
 infra/gitlab/terraform/demo-resources.tfplan
 infra/gitlab/terraform/*.tfplan
+
+# Security files
+security/secrets-manager/.encryption_key
+security/secrets-manager/.secrets_store
+security/auth/.revoked_tokens
+security/encryption/private_key.pem
+security/encryption/public_key.pem
+security/*.log
+security/audit.log
+security/security_audit.log
+security/security_events.log
+
+# Performance files
+performance/logs/
+performance/reports/
+performance/optimizations/
+performance/tests/
+performance/cache/
+performance/monitoring/
+*.perf
+*.profile
+*.benchmark
+
+# Validation files
+warehouse/bigquery/dbt/validation_results.json
+warehouse/bigquery/dbt/validation_report.md
+
+# Temporary validation scripts
+warehouse/bigquery/dbt/validate_models.py
+warehouse/bigquery/dbt/simple_validation.py

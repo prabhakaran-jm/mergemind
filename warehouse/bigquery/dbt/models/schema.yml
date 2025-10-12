@@ -128,3 +128,39 @@ models:
           - not_null
           - accepted_values:
               values: ['Low', 'Medium', 'High']
+
+  - name: co_review_graph
+    description: "Co-review graph for reviewer suggestions based on historical interactions"
+    columns:
+      - name: author_id
+        description: "Author user ID"
+        tests:
+          - not_null
+      - name: reviewer_id
+        description: "Reviewer user ID"
+        tests:
+          - not_null
+      - name: interaction_count
+        description: "Total number of interactions"
+        tests:
+          - not_null
+      - name: approval_count
+        description: "Number of approvals"
+        tests:
+          - not_null
+      - name: review_count
+        description: "Number of reviews"
+        tests:
+          - not_null
+      - name: comment_count
+        description: "Number of comments"
+        tests:
+          - not_null
+      - name: final_weight
+        description: "Final calculated weight for reviewer suggestion"
+        tests:
+          - not_null
+      - name: rank_by_weight
+        description: "Rank of reviewer for this author"
+        tests:
+          - not_null

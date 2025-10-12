@@ -1,0 +1,70 @@
+# Prometheus configuration for MergeMind monitoring
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'mergemind-prod'
+    environment: 'production'
+
+rule_files:
+  - "rules/*.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # MergeMind API
+  - job_name: 'mergemind-api'
+    static_configs:
+      - targets: ['mergemind-api:8080']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    honor_labels: true
+
+  # MergeMind UI
+  - job_name: 'mergemind-ui'
+    static_configs:
+      - targets: ['mergemind-ui:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Node Exporter (system metrics)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 15s
+
+  # cAdvisor (container metrics)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 15s
+
+  # BigQuery metrics (via custom exporter)
+  - job_name: 'bigquery-exporter'
+    static_configs:
+      - targets: ['bigquery-exporter:8080']
+    scrape_interval: 60s
+
+  # GitLab metrics (via custom exporter)
+  - job_name: 'gitlab-exporter'
+    static_configs:
+      - targets: ['gitlab-exporter:8080']
+    scrape_interval: 30s
+
+  # Vertex AI metrics (via custom exporter)
+  - job_name: 'vertex-ai-exporter'
+    static_configs:
+      - targets: ['vertex-ai-exporter:8080']
+    scrape_interval: 60s
+
+  # Cloud Run metrics (via Stackdriver exporter)
+  - job_name: 'stackdriver-exporter'
+    static_configs:
+      - targets: ['stackdriver-exporter:8080']
+    scrape_interval: 60s

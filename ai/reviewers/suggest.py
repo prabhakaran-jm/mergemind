@@ -21,9 +21,10 @@ class ReviewerCandidate:
 class ReviewerSuggester:
     """Suggests reviewers based on co-review graph and availability."""
     
-    def __init__(self, bigquery_client):
-        """Initialize with BigQuery client."""
+    def __init__(self, bigquery_client, user_service=None):
+        """Initialize with BigQuery client and user service."""
         self.bq_client = bigquery_client
+        self.user_service = user_service
         
     def suggest(self, mr_context: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
@@ -124,9 +125,11 @@ class ReviewerSuggester:
         return suggestions
     
     def _get_user_name(self, user_id: int) -> str:
-        """Get user name by ID (stub implementation)."""
-        # TODO: Query users table or GitLab API
-        return f"User {user_id}"
+        """Get user name by ID."""
+        if self.user_service:
+            return self.user_service.get_user_name(user_id)
+        else:
+            return f"User {user_id}"
     
     def _generate_reason(self, reviewer: Dict[str, Any], mr_context: Dict[str, Any]) -> str:
         """Generate human-readable reason for suggestion."""
