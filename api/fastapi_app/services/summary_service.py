@@ -8,6 +8,9 @@ from datetime import datetime
 
 from services.bigquery_client import bigquery_client
 from services.gitlab_client import gitlab_client
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 from ai.summarizer.summarize import diff_summarizer
 
 logger = logging.getLogger(__name__)

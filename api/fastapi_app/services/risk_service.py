@@ -7,6 +7,9 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 
 from services.bigquery_client import bigquery_client
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 from ai.scoring.rules import score, validate_features
 
 logger = logging.getLogger(__name__)
@@ -65,8 +68,9 @@ class RiskService:
             }
     
     def _get_risk_features(self, mr_id: int) -> Optional[Dict[str, Any]]:
-        """Get risk features from BigQuery."""
+        """Get risk features from raw BigQuery data."""
         try:
+            # Get risk features from transformed table
             sql = """
             SELECT 
               mr_id,
@@ -88,6 +92,7 @@ class RiskService:
             results = self.bq_client.query(sql, mr_id=mr_id)
             
             if results:
+                # Return the risk features directly from the transformed table
                 return results[0]
             else:
                 return None

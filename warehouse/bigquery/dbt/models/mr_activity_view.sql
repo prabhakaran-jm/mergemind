@@ -1,44 +1,26 @@
 {{ config(materialized='view') }}
 
-WITH last_pipeline AS (
-  SELECT 
-    project_id, 
-    mr_id, 
-    ARRAY_AGG(
-      STRUCT(
-        status, 
-        TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), updated_at, MINUTE) AS age_min
-      )
-      ORDER BY updated_at DESC 
-      LIMIT 1
-    )[OFFSET(0)] AS lp
-  FROM `{{ var('raw_dataset', 'mergemind_raw') }}.pipelines`
-  WHERE mr_id IS NOT NULL
-  GROUP BY project_id, mr_id
-),
-
-recent_notes AS (
-  SELECT 
-    project_id, 
-    mr_id, 
-    COUNTIF(created_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR)) AS notes_count_24h
-  FROM `{{ var('raw_dataset', 'mergemind_raw') }}.mr_notes`
-  GROUP BY project_id, mr_id
-)
-
+-- Simplified MR activity view using only available raw data
 SELECT
-  mr.project_id, 
-  mr.mr_id, 
-  mr.title, 
-  mr.author_id, 
-  mr.created_at, 
-  mr.state,
-  lp.lp.status AS last_pipeline_status,
-  lp.lp.age_min AS last_pipeline_age_min,
-  COALESCE(rn.notes_count_24h, 0) AS notes_count_24h,
-  mr.approvals_left,
-  mr.additions, 
-  mr.deletions
-FROM `{{ var('raw_dataset', 'mergemind_raw') }}.merge_requests` mr
-LEFT JOIN last_pipeline lp USING (project_id, mr_id)
-LEFT JOIN recent_notes rn USING (project_id, mr_id)
+  id as mr_id,
+  project_id, 
+  title, 
+  author_id, 
+  created_at, 
+  state,
+  -- Default values for missing fields
+  'unknown' AS last_pipeline_status,
+  0 AS last_pipeline_age_min,
+  0 AS notes_count_24h,
+  0 AS approvals_left,
+  0 AS additions, 
+  0 AS deletions,
+  TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), created_at, HOUR) AS age_hours,
+  source_branch,
+  target_branch,
+  web_url,
+  assignee_id,
+  updated_at,
+  merged_at,
+  closed_at
+FROM `ai-accelerate-mergemind.gitlab_connector_v1.merge_requests`

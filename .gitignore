@@ -152,6 +152,5 @@ performance/monitoring/
 warehouse/bigquery/dbt/validation_results.json
 warehouse/bigquery/dbt/validation_report.md
 
-# Temporary validation scripts
-warehouse/bigquery/dbt/validate_models.py
-warehouse/bigquery/dbt/simple_validation.py
+# Validation scripts (not committed to repo)
+validation_scripts/

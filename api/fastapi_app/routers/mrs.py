@@ -41,11 +41,12 @@ async def list_merge_requests(
             params["project_id"] = project_id
         
         # Add cursor-based pagination
-        if cursor:
+        if cursor and cursor != "None":
             where_conditions.append("mr_id > @cursor")
             params["cursor"] = int(cursor)
         
-        where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+        where_clause = " AND ".join(where_conditions) if where_conditions else "TRUE"
+        
         
         sql = f"""
         SELECT 
@@ -53,14 +54,21 @@ async def list_merge_requests(
           project_id,
           title,
           author_id,
+          assignee_id,
           created_at,
+          updated_at,
           state,
-          TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), created_at, HOUR) AS age_hours,
+          age_hours,
+          last_pipeline_status,
+          notes_count_24h,
+          approvals_left,
           additions,
           deletions,
-          last_pipeline_status,
-          approvals_left,
-          notes_count_24h
+          source_branch,
+          target_branch,
+          web_url,
+          merged_at,
+          closed_at
         FROM `mergemind.mr_activity_view`
         WHERE {where_clause}
         ORDER BY mr_id DESC
@@ -72,22 +80,35 @@ async def list_merge_requests(
         # Calculate risk scores for each MR
         items = []
         for row in results:
-            # Get risk score
-            risk_result = risk_service.calculate_risk(row["mr_id"])
+            # Get risk score (with fallback for missing data)
+            try:
+                risk_result = risk_service.calculate_risk(row["mr_id"])
+            except Exception as e:
+                logger.warning(f"Risk calculation failed for MR {row['mr_id']}: {e}")
+                risk_result = {"band": "Unknown", "score": 0}
             
             item = {
                 "mr_id": row["mr_id"],
                 "project_id": row["project_id"],
                 "title": row["title"],
                 "author": f"User {row['author_id']}",  # TODO: Get actual user name
+                "assignee": f"User {row['assignee_id']}" if row["assignee_id"] else None,
                 "age_hours": row["age_hours"],
                 "risk_band": risk_result["band"],
                 "risk_score": risk_result["score"],
+                "state": row["state"],
                 "pipeline_status": row["last_pipeline_status"],
-                "approvals_left": row["approvals_left"],
                 "notes_count_24h": row["notes_count_24h"],
+                "approvals_left": row["approvals_left"],
                 "additions": row["additions"],
-                "deletions": row["deletions"]
+                "deletions": row["deletions"],
+                "source_branch": row["source_branch"],
+                "target_branch": row["target_branch"],
+                "web_url": row["web_url"],
+                "created_at": row["created_at"].isoformat() if row["created_at"] else None,
+                "updated_at": row["updated_at"].isoformat() if row["updated_at"] else None,
+                "merged_at": row["merged_at"].isoformat() if row["merged_at"] else None,
+                "closed_at": row["closed_at"].isoformat() if row["closed_at"] else None
             }
             items.append(item)
         
@@ -124,22 +145,24 @@ async def get_top_blockers(
           project_id,
           title,
           author_id,
+          assignee_id,
           created_at,
-          TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), created_at, HOUR) AS age_hours,
+          updated_at,
+          state,
+          age_hours,
           last_pipeline_status,
-          approvals_left,
           notes_count_24h,
+          approvals_left,
           additions,
-          deletions
+          deletions,
+          source_branch,
+          target_branch,
+          web_url,
+          merged_at,
+          closed_at
         FROM `mergemind.mr_activity_view`
         WHERE state = 'opened'
-          AND (last_pipeline_status = 'failed' OR approvals_left > 0)
-        ORDER BY 
-          CASE 
-            WHEN last_pipeline_status = 'failed' THEN 1
-            ELSE 2
-          END,
-          age_hours DESC
+        ORDER BY age_hours DESC
         LIMIT @limit
         """
         
@@ -147,21 +170,34 @@ async def get_top_blockers(
         
         blockers = []
         for row in results:
-            # Get risk score
-            risk_result = risk_service.calculate_risk(row["mr_id"])
+            # Get risk score (with fallback for missing data)
+            try:
+                risk_result = risk_service.calculate_risk(row["mr_id"])
+            except Exception as e:
+                logger.warning(f"Risk calculation failed for MR {row['mr_id']}: {e}")
+                risk_result = {"band": "Unknown", "score": 0}
             
             blocker = {
                 "mr_id": row["mr_id"],
                 "project_id": row["project_id"],
                 "title": row["title"],
                 "author": f"User {row['author_id']}",  # TODO: Get actual user name
+                "assignee": f"User {row['assignee_id']}" if row["assignee_id"] else None,
                 "age_hours": row["age_hours"],
                 "risk_band": risk_result["band"],
                 "risk_score": risk_result["score"],
-                "blocking_reason": "Pipeline failed" if row["last_pipeline_status"] == "failed" else f"{row['approvals_left']} approvals needed",
+                "blocking_reason": f"Open for {row['age_hours']} hours",
+                "state": row["state"],
                 "pipeline_status": row["last_pipeline_status"],
+                "notes_count_24h": row["notes_count_24h"],
                 "approvals_left": row["approvals_left"],
-                "notes_count_24h": row["notes_count_24h"]
+                "additions": row["additions"],
+                "deletions": row["deletions"],
+                "source_branch": row["source_branch"],
+                "target_branch": row["target_branch"],
+                "web_url": row["web_url"],
+                "created_at": row["created_at"].isoformat() if row["created_at"] else None,
+                "updated_at": row["updated_at"].isoformat() if row["updated_at"] else None
             }
             blockers.append(blocker)
         

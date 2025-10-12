@@ -1,0 +1,96 @@
+version: 2
+
+sources:
+  - name: raw
+    description: "Raw GitLab data from Fivetran connector"
+    database: ai-accelerate-mergemind
+    schema: gitlab_connector_v1
+    tables:
+      - name: merge_requests
+        description: "Raw merge requests data from GitLab"
+        columns:
+          - name: id
+            description: "Merge request ID"
+            tests:
+              - not_null
+              - unique
+          - name: project_id
+            description: "GitLab project ID"
+            tests:
+              - not_null
+          - name: title
+            description: "Merge request title"
+            tests:
+              - not_null
+          - name: description
+            description: "Merge request description"
+          - name: state
+            description: "Current state of the merge request"
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ['opened', 'closed', 'merged']
+          - name: author_id
+            description: "Author user ID"
+            tests:
+              - not_null
+          - name: assignee_id
+            description: "Assignee user ID"
+          - name: created_at
+            description: "When the merge request was created"
+            tests:
+              - not_null
+          - name: updated_at
+            description: "When the merge request was last updated"
+          - name: merged_at
+            description: "When the merge request was merged"
+          - name: closed_at
+            description: "When the merge request was closed"
+          - name: source_branch
+            description: "Source branch name"
+          - name: target_branch
+            description: "Target branch name"
+          - name: web_url
+            description: "Web URL of the merge request"
+
+      - name: projects
+        description: "Raw projects data from GitLab"
+        columns:
+          - name: id
+            description: "Project ID"
+            tests:
+              - not_null
+              - unique
+          - name: name
+            description: "Project name"
+            tests:
+              - not_null
+          - name: description
+            description: "Project description"
+          - name: created_at
+            description: "When the project was created"
+            tests:
+              - not_null
+          - name: web_url
+            description: "Web URL of the project"
+
+      - name: users
+        description: "Raw users data from GitLab"
+        columns:
+          - name: id
+            description: "User ID"
+            tests:
+              - not_null
+              - unique
+          - name: username
+            description: "Username"
+            tests:
+              - not_null
+          - name: name
+            description: "Full name"
+          - name: email
+            description: "Email address"
+          - name: created_at
+            description: "When the user was created"
+            tests:
+              - not_null

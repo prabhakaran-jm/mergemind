@@ -8,6 +8,9 @@ from datetime import datetime
 
 from services.bigquery_client import bigquery_client
 from services.user_service import user_service
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 from ai.reviewers.suggest import ReviewerSuggester
 
 logger = logging.getLogger(__name__)
