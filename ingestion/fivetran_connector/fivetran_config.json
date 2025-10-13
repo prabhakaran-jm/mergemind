@@ -1,0 +1,14 @@
+{
+  "gitlab_token": "glpat-LEivq-E39j1hBGKKxBwm4W86MQp1OjEH.01.0w19hwbso",
+  "gitlab_base_url": "https://35.202.37.189.sslip.io",
+  "auto_discover_projects": "true",
+  "project_name_pattern": "*",
+  "include_private_projects": "true",
+  "max_projects_to_sync": "100",
+  "start_date": "2024-01-01T00:00:00Z",
+  "sync_projects_table": "true",
+  "sync_merge_requests_table": "true",
+  "sync_users_table": "true",
+  "max_records_per_sync": "10000",
+  "sync_interval_hours": "1"
+}

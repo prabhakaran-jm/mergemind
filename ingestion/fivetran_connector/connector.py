@@ -19,16 +19,149 @@ logger = logging.getLogger(__name__)
 DEFAULT_CONFIG = {
     "gitlab_token": os.getenv("GITLAB_TOKEN", ""),
     "gitlab_base_url": os.getenv("GITLAB_BASE_URL", "https://35.202.37.189.sslip.io"),
-    "gitlab_project_ids": os.getenv("GITLAB_PROJECT_IDS", "4,5,6"),
+    "gitlab_project_ids": os.getenv("GITLAB_PROJECT_IDS", "4,5,6,7,8,9"),
     "start_date": "2024-01-01T00:00:00Z",
     "sync_projects_table": True,
     "sync_merge_requests_table": True,
     "sync_users_table": True,
     "max_records_per_sync": 10000,
-    "sync_interval_hours": 1
+    "sync_interval_hours": 1,
+    # Dynamic discovery options
+    "auto_discover_projects": False,
+    "project_name_pattern": "*",
+    "include_private_projects": True,
+    "max_projects_to_sync": 100
 }
 
 logger.info("GitLab connector module loaded")
+
+# Global cache for discovered projects
+_discovered_projects = None
+_last_discovery = None
+_discovery_cache_ttl = 3600  # 1 hour cache
+
+
+def get_headers(config: Dict[str, Any]) -> Dict[str, str]:
+    """Get HTTP headers for GitLab API requests."""
+    return {
+        'Authorization': f'Bearer {config["gitlab_token"]}',
+        'Content-Type': 'application/json'
+    }
+
+
+def discover_projects(config: Dict[str, Any], force_refresh: bool = False) -> List[Dict[str, Any]]:
+    """
+    Dynamically discover GitLab projects based on configuration.
+    
+    Args:
+        config: Configuration dictionary
+        force_refresh: Force refresh of project discovery cache
+        
+    Returns:
+        List of project dictionaries
+    """
+    global _discovered_projects, _last_discovery
+    
+    # Check cache first
+    if (not force_refresh and 
+        _discovered_projects and 
+        _last_discovery and 
+        (datetime.now() - _last_discovery).seconds < _discovery_cache_ttl):
+        logger.info(f"Using cached project discovery ({len(_discovered_projects)} projects)")
+        return _discovered_projects
+
+    logger.info("Discovering GitLab projects dynamically...")
+    
+    try:
+        projects = []
+        page = 1
+        per_page = 100
+        max_projects = int(config.get("max_projects_to_sync", 1000))
+        
+        while len(projects) < max_projects:
+            url = f"{config['gitlab_base_url']}/api/v4/projects"
+            params = {
+                'page': page,
+                'per_page': per_page,
+                'membership': True,  # Only projects user has access to
+                'simple': False,
+                'order_by': 'last_activity_at',
+                'sort': 'desc'
+            }
+            
+            # Add visibility filter
+            if not config.get("include_private_projects", True):
+                params['visibility'] = 'public'
+            
+            response = requests.get(url, headers=get_headers(config), params=params)
+            
+            if response.status_code != 200:
+                logger.error(f"Failed to fetch projects: {response.status_code} - {response.text}")
+                break
+            
+            page_projects = response.json()
+            if not page_projects:
+                break
+            
+            # Filter projects based on name pattern
+            pattern = config.get("project_name_pattern", "*")
+            for project in page_projects:
+                if matches_project_pattern(project['name'], pattern):
+                    projects.append({
+                        'id': project['id'],
+                        'name': project['name'],
+                        'description': project.get('description', ''),
+                        'web_url': project['web_url'],
+                        'created_at': project['created_at'],
+                        'updated_at': project['updated_at'],
+                        'visibility': project['visibility'],
+                        'default_branch': project.get('default_branch', 'main'),
+                        'last_activity_at': project.get('last_activity_at'),
+                        'star_count': project.get('star_count', 0),
+                        'fork_count': project.get('fork_count', 0)
+                    })
+            
+            # Check if we have more pages
+            if len(page_projects) < per_page:
+                break
+                
+            page += 1
+        
+        # Cache the results
+        _discovered_projects = projects
+        _last_discovery = datetime.now()
+        
+        logger.info(f"Discovered {len(projects)} projects matching pattern '{pattern}'")
+        return projects
+        
+    except Exception as e:
+        logger.error(f"Error discovering projects: {e}")
+        return []
+
+
+def matches_project_pattern(project_name: str, pattern: str) -> bool:
+    """Check if project name matches the configured pattern."""
+    if not pattern or pattern == "*":
+        return True
+        
+    # Simple wildcard matching
+    if '*' in pattern:
+        import re
+        regex_pattern = pattern.replace('*', '.*')
+        return bool(re.match(regex_pattern, project_name, re.IGNORECASE))
+    
+    return project_name.lower() == pattern.lower()
+
+
+def get_project_ids(config: Dict[str, Any]) -> List[int]:
+    """Get list of project IDs to sync."""
+    if config.get("auto_discover_projects", False):
+        projects = discover_projects(config)
+        return [p['id'] for p in projects]
+    else:
+        # Fallback to configured project IDs
+        project_ids_str = config.get("gitlab_project_ids", "")
+        return [int(pid.strip()) for pid in project_ids_str.split(',') if pid.strip()]
 
 
 def schema(configuration: Dict[str, Any] = None) -> List[Dict[str, Any]]:
@@ -110,6 +243,8 @@ def update(configuration: Dict[str, Any] = None, state: Dict[str, Any] = None) -
     config["sync_users_table"] = config.get("sync_users_table", "true").lower() == "true"
     config["max_records_per_sync"] = int(config.get("max_records_per_sync", "10000"))
     config["sync_interval_hours"] = int(config.get("sync_interval_hours", "1"))
+    config["auto_discover_projects"] = config.get("auto_discover_projects", "false").lower() == "true"
+    config["include_private_projects"] = config.get("include_private_projects", "true").lower() == "true"
     
     logger.info(f"Configuration keys: {list(config.keys())}")
     
@@ -119,9 +254,13 @@ def update(configuration: Dict[str, Any] = None, state: Dict[str, Any] = None) -
         logger.error(f"Configuration received: {configuration}")
         raise ValueError("gitlab_token is required in configuration")
     
-    # Parse project IDs
-    project_ids = [int(pid.strip()) for pid in config['gitlab_project_ids'].split(",")]
-    logger.info(f"GitLab connector initialized for projects: {','.join(map(str, project_ids))}")
+    # Get project IDs (dynamic discovery or configured)
+    if config.get("auto_discover_projects", False):
+        project_ids = get_project_ids(config)
+        logger.info(f"GitLab connector initialized with dynamic discovery: {len(project_ids)} projects")
+    else:
+        project_ids = [int(pid.strip()) for pid in config['gitlab_project_ids'].split(",")]
+        logger.info(f"GitLab connector initialized for configured projects: {','.join(map(str, project_ids))}")
     
     # Get last sync time from state for incremental sync
     last_sync_time = None
@@ -151,9 +290,11 @@ def update(configuration: Dict[str, Any] = None, state: Dict[str, Any] = None) -
     if config.get("sync_projects_table", True):
         logger.info("Processing table: projects")
         project_count = 0
-        for project_id in project_ids:
-            project = _get_project_info(project_id, config)
-            if project:
+        
+        if config.get("auto_discover_projects", False):
+            # Use dynamic discovery
+            projects = discover_projects(config)
+            for project in projects:
                 yield op.upsert("projects", {
                     "id": project["id"],
                     "name": project["name"],
@@ -165,6 +306,22 @@ def update(configuration: Dict[str, Any] = None, state: Dict[str, Any] = None) -
                     "default_branch": project.get("default_branch", ""),
                 })
                 project_count += 1
+        else:
+            # Use configured project IDs (legacy mode)
+            for project_id in project_ids:
+                project = _get_project_info(project_id, config)
+                if project:
+                    yield op.upsert("projects", {
+                        "id": project["id"],
+                        "name": project["name"],
+                        "description": project.get("description", ""),
+                        "web_url": project["web_url"],
+                        "created_at": project["created_at"],
+                        "updated_at": project["updated_at"],
+                        "visibility": project["visibility"],
+                        "default_branch": project.get("default_branch", ""),
+                    })
+                    project_count += 1
         
         logger.info(f"Successfully processed {project_count} records for table projects")
         

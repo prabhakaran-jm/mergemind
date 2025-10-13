@@ -96,7 +96,7 @@ chmod +x setup.sh
 
 ### BigQuery Datasets
 - `mergemind`: Main application dataset
-- `gitlab_connector_v1`: Raw GitLab data from Fivetran
+- `mergemind_raw`: Raw GitLab data from Fivetran
 - `fivetran_data`: Fivetran connector data
 
 ### Service Accounts

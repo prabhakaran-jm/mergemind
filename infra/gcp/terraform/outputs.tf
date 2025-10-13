@@ -27,8 +27,8 @@ output "bigquery_datasets" {
       project    = var.project_id
       note       = "existing dataset"
     }
-    gitlab_connector_v1 = {
-      dataset_id = "gitlab_connector_v1"
+    mergemind_raw = {
+      dataset_id = "mergemind_raw"
       location   = "US"
       project    = var.project_id
       note       = "existing dataset"

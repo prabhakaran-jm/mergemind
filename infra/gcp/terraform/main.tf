@@ -39,7 +39,7 @@ resource "google_project_service" "apis" {
 }
 
 # Note: BigQuery datasets already exist:
-# - ai-accelerate-mergemind.gitlab_connector_v1 (raw GitLab data)
+# - ai-accelerate-mergemind.mergemind_raw (raw GitLab data)
 # - ai-accelerate-mergemind.mergemind (transformed data)
 # No need to create them again
 
@@ -174,7 +174,7 @@ output "mergemind_dataset_id" {
 
 output "gitlab_dataset_id" {
   description = "GitLab Connector BigQuery Dataset ID (existing)"
-  value       = "gitlab_connector_v1"
+  value       = "mergemind_raw"
 }
 
 output "mergemind_api_service_account" {

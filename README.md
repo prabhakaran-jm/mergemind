@@ -4,7 +4,7 @@ AI-powered merge request analysis and insights platform for GitLab, providing ri
 
 ## 🚀 Features
 
-- **AI-Powered Analysis**: Automated diff summarization using Vertex AI Gemini 1.5
+- **AI-Powered Analysis**: Automated diff summarization using Vertex AI Gemini 2.5 Flash
 - **Risk Scoring**: Deterministic risk assessment for merge requests
 - **Reviewer Suggestions**: Intelligent reviewer recommendations based on co-review graph
 - **Real-time Insights**: Live MR analysis with risk badges and blocking detection

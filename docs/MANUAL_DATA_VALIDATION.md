@@ -16,15 +16,15 @@ SELECT COUNT(*) as total_mrs,
        COUNTIF(state = 'opened') as open_mrs,
        COUNTIF(state = 'merged') as merged_mrs,
        COUNTIF(state = 'closed') as closed_mrs
-FROM `gitlab_connector_v1.merge_requests`;
+FROM `mergemind_raw.merge_requests`;
 
 -- Check raw projects
 SELECT COUNT(*) as total_projects
-FROM `gitlab_connector_v1.projects`;
+FROM `mergemind_raw.projects`;
 
 -- Check raw users
 SELECT COUNT(*) as total_users
-FROM `gitlab_connector_v1.users`;
+FROM `mergemind_raw.users`;
 ```
 
 ### Check Transformed Data
@@ -69,7 +69,7 @@ SELECT
   t.title as transformed_title,
   r.state as raw_state,
   t.state as transformed_state
-FROM `gitlab_connector_v1.merge_requests` r
+FROM `mergemind_raw.merge_requests` r
 JOIN `mergemind.mr_activity_view` t ON r.id = t.mr_id
 WHERE r.id != t.mr_id OR r.title != t.title OR r.state != t.state;
 -- Should return 0 rows if consistent

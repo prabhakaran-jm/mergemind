@@ -12,7 +12,7 @@ UI_PORT=5173
 
 # Google Cloud Platform
 GCP_PROJECT_ID=ai-accelerate-mergemind
-BQ_DATASET_RAW=gitlab_connector_v1
+BQ_DATASET_RAW=mergemind_raw
 BQ_DATASET_MODELED=mergemind
 VERTEX_LOCATION=us-central1
 

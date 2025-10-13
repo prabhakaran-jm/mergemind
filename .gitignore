@@ -70,6 +70,10 @@ ui/web/build/
 warehouse/bigquery/dbt/target/
 warehouse/bigquery/dbt/dbt_packages/
 warehouse/bigquery/dbt/logs/
+warehouse/bigquery/dbt/dbt.env
+warehouse/bigquery/dbt/.env
+warehouse/bigquery/dbt/profiles.yml
+warehouse/bigquery/dbt/.dbt/
 
 # Google Cloud
 .gcloud/
@@ -91,6 +95,8 @@ service-account-key.json
 .env.development.local
 .env.test.local
 .env.production.local
+dbt.env
+*.env
 
 # Fivetran connector config
 ingestion/fivetran_connector/config.env
@@ -154,3 +160,45 @@ warehouse/bigquery/dbt/validation_report.md
 
 # Validation scripts (not committed to repo)
 validation_scripts/
+
+# Cloud Build artifacts
+cloudbuild.yaml
+cloudbuild-ui.yaml
+
+# Deployment scripts (temporary)
+deploy_*.ps1
+deploy_*.sh
+
+# Test and debug files
+test_*.py
+debug_*.py
+simple_test.py
+test_update.py
+test_filtering.py
+test_config_fix.py
+
+# Docker build artifacts
+.dockerignore
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Cloud Run local development
+.local/
