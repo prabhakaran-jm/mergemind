@@ -4,7 +4,7 @@ sources:
   - name: raw
     description: "Raw GitLab data from Fivetran connector"
     database: ai-accelerate-mergemind
-    schema: gitlab_connector_v1
+    schema: mergemind_raw
     tables:
       - name: merge_requests
         description: "Raw merge requests data from GitLab"

@@ -23,4 +23,4 @@ SELECT
   updated_at,
   merged_at,
   closed_at
-FROM `ai-accelerate-mergemind.gitlab_connector_v1.merge_requests`
+FROM `ai-accelerate-mergemind.mergemind_raw.merge_requests`

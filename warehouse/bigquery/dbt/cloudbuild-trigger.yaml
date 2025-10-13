@@ -1,0 +1,36 @@
+# Cloud Build configuration for event-driven dbt transformations
+# This runs dbt when triggered by repository pushes
+
+steps:
+  # Install dbt and run transformations
+  - name: 'python:3.11-slim'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        apt-get update && apt-get install -y git curl
+        pip install --upgrade pip
+        pip install dbt-bigquery==1.7.0 google-cloud-bigquery==3.11.4
+        # Debug: Check what's in the workspace
+        echo "=== Workspace Contents ==="
+        ls -la /workspace/
+        echo "=== Looking for dbt files ==="
+        find /workspace -name "dbt_project.yml" -o -name "profiles.yml" 2>/dev/null || echo "No dbt files found"
+        # Run dbt from the workspace root (where the files actually are)
+        echo "=== Running dbt from workspace root ==="
+        cd /workspace
+        dbt run --profiles-dir .
+        dbt test --profiles-dir .
+    env:
+      - 'GCP_PROJECT_ID=${_PROJECT_ID}'
+      - 'BQ_DATASET_RAW=${_DATASET_RAW}'
+      - 'BQ_DATASET_MODELED=${_DATASET_MODELED}'
+
+# Timeout
+timeout: '1200s'
+
+# Substitutions for flexibility
+substitutions:
+  _PROJECT_ID: 'ai-accelerate-mergemind'
+  _DATASET_RAW: 'mergemind_raw'
+  _DATASET_MODELED: 'mergemind'

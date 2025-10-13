@@ -9,7 +9,7 @@ WITH mr_interactions AS (
     created_at,
     state,
     title
-  FROM `ai-accelerate-mergemind.gitlab_connector_v1.merge_requests`
+  FROM `ai-accelerate-mergemind.mergemind_raw.merge_requests`
   WHERE state IN ('merged', 'closed')
 ),
 
@@ -22,7 +22,7 @@ project_collaborators AS (
     COUNT(*) as mr_count,
     MIN(created_at) as first_mr,
     MAX(created_at) as last_mr
-  FROM `ai-accelerate-mergemind.gitlab_connector_v1.merge_requests`
+  FROM `ai-accelerate-mergemind.mergemind_raw.merge_requests`
   GROUP BY project_id, author_id
 ),
 

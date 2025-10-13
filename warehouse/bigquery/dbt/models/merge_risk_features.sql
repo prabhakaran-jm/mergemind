@@ -9,7 +9,7 @@ WITH base AS (
     created_at,
     state,
     TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), created_at, HOUR) AS age_hours
-  FROM `ai-accelerate-mergemind.gitlab_connector_v1.merge_requests`
+  FROM `ai-accelerate-mergemind.mergemind_raw.merge_requests`
 )
 
 SELECT
