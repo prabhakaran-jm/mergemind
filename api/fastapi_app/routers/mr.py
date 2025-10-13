@@ -14,6 +14,7 @@ from services.bigquery_client import bigquery_client
 from services.risk_service import risk_service
 from services.reviewer_service import reviewer_service
 from services.summary_service import summary_service
+from services.test_suggestion_service import test_suggestion_service
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -65,7 +66,7 @@ async def get_mr_context(
             raise HTTPException(status_code=404, detail=f"Merge request {mr_id} not found")
         
         # Get risk score
-        risk_result = risk_service.calculate_risk(mr_id)
+        risk_result = await risk_service.calculate_risk(mr_id)
         
         # Get author info (stub for now)
         author = {
@@ -87,9 +88,12 @@ async def get_mr_context(
         
         # Get risk info
         risk = {
-            "score": risk_result["score"],
-            "band": risk_result["band"],
-            "reasons": risk_result["reasons"]
+            "score": risk_result.get("combined_score", risk_result.get("score", 0)),
+            "band": risk_result.get("combined_band", risk_result.get("band", "Low")),
+            "reasons": risk_result.get("reasons", []),
+            "ai_enhanced": risk_result.get("ai_enhanced", False),
+            "ai_insights": risk_result.get("ai_insights", []),
+            "ai_recommendations": risk_result.get("ai_recommendations", [])
         }
         
         result = {
@@ -166,7 +170,7 @@ async def get_mr_reviewers(
             raise HTTPException(status_code=429, detail="Rate limit exceeded")
         
         # Get reviewer suggestions
-        suggestions = reviewer_service.suggest_reviewers(mr_id)
+        suggestions = await reviewer_service.suggest_reviewers(mr_id)
         
         return {
             "reviewers": suggestions
@@ -193,7 +197,7 @@ async def get_mr_risk(
             raise HTTPException(status_code=429, detail="Rate limit exceeded")
         
         # Get risk score
-        risk_result = risk_service.calculate_risk(mr_id)
+        risk_result = await risk_service.calculate_risk(mr_id)
         
         # Get risk features for debugging
         risk_features = risk_service.get_risk_features(mr_id)
@@ -251,10 +255,10 @@ async def get_mr_stats(
         mr_data = results[0]
         
         # Get risk score
-        risk_result = risk_service.calculate_risk(mr_id)
+        risk_result = await risk_service.calculate_risk(mr_id)
         
         # Get reviewer suggestions
-        suggestions = reviewer_service.suggest_reviewers(mr_id)
+        suggestions = await reviewer_service.suggest_reviewers(mr_id)
         
         # Get summary stats
         summary_stats = summary_service.get_summary_stats()
@@ -272,3 +276,38 @@ async def get_mr_stats(
     except Exception as e:
         logger.error(f"Failed to get stats for MR {mr_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get stats: {str(e)}")
+
+
+@router.get("/{mr_id}/test-suggestions")
+async def get_test_suggestions(
+    mr_id: int = Path(..., description="Merge request ID")
+) -> Dict[str, Any]:
+    """
+    Get AI-powered test suggestions for a merge request.
+    
+    Returns:
+        Dictionary with test suggestions including unit tests, integration tests,
+        edge cases, and performance tests
+    """
+    try:
+        # Rate limiting
+        if not _check_rate_limit(f"test_suggestions_{mr_id}"):
+            raise HTTPException(status_code=429, detail="Rate limit exceeded")
+        
+        # Get test suggestions
+        suggestions = await test_suggestion_service.suggest_tests(mr_id)
+        
+        if suggestions.get("fallback"):
+            logger.warning(f"Test suggestions fallback for MR {mr_id}: {suggestions.get('error')}")
+        
+        return {
+            "mr_id": mr_id,
+            "suggestions": suggestions,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get test suggestions for MR {mr_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get test suggestions: {str(e)}")

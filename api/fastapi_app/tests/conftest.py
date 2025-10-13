@@ -15,8 +15,6 @@ os.environ.update({
     "VERTEX_LOCATION": "us-central1",
     "GITLAB_BASE_URL": "https://test.gitlab.com",
     "GITLAB_TOKEN": "test-token",
-    "SLACK_SIGNING_SECRET": "test-secret",
-    "SLACK_BOT_TOKEN": "test-bot-token",
     "API_BASE_URL": "http://localhost:8080",
     "LOG_LEVEL": "DEBUG"
 })
@@ -285,8 +283,6 @@ def setup_test_environment():
         "VERTEX_LOCATION": "us-central1",
         "GITLAB_BASE_URL": "https://test.gitlab.com",
         "GITLAB_TOKEN": "test-token",
-        "SLACK_SIGNING_SECRET": "test-secret",
-        "SLACK_BOT_TOKEN": "test-bot-token",
         "API_BASE_URL": "http://localhost:8080",
         "LOG_LEVEL": "DEBUG"
     }

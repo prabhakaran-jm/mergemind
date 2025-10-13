@@ -191,7 +191,7 @@ After creating demo resources:
 
 1. **Test Fivetran Connector** with the project IDs
 2. **Run MergeMind API** to see demo data
-3. **Test Slack Bot** with demo merge requests
+3. **Test API** with demo merge requests
 4. **Verify BigQuery** data pipeline
 
 ## 🔗 **Useful Links**

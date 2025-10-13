@@ -24,13 +24,9 @@ class Settings(BaseSettings):
     vertex_location: str = Field(default="europe-west2", env="VERTEX_LOCATION")
     
     # GitLab
-    gitlab_base_url: str = Field(default="https://gitlab.com", env="GITLAB_BASE_URL")
+    gitlab_base_url: str = Field(default="https://35.202.37.189.sslip.io", env="GITLAB_BASE_URL")
     gitlab_token: Optional[str] = Field(default=None, env="GITLAB_TOKEN")
     
-    # Slack
-    slack_signing_secret: Optional[str] = Field(default=None, env="SLACK_SIGNING_SECRET")
-    slack_bot_token: Optional[str] = Field(default=None, env="SLACK_BOT_TOKEN")
-    slack_command: str = Field(default="/mergemind", env="SLACK_COMMAND")
     
     # API Configuration
     api_base_url: str = Field(default="http://localhost:8080", env="API_BASE_URL")

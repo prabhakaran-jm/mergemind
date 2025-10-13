@@ -82,7 +82,7 @@ async def list_merge_requests(
         for row in results:
             # Get risk score (with fallback for missing data)
             try:
-                risk_result = risk_service.calculate_risk(row["mr_id"])
+                risk_result = await risk_service.calculate_risk(row["mr_id"])
             except Exception as e:
                 logger.warning(f"Risk calculation failed for MR {row['mr_id']}: {e}")
                 risk_result = {"band": "Unknown", "score": 0}
@@ -94,8 +94,8 @@ async def list_merge_requests(
                 "author": f"User {row['author_id']}",  # TODO: Get actual user name
                 "assignee": f"User {row['assignee_id']}" if row["assignee_id"] else None,
                 "age_hours": row["age_hours"],
-                "risk_band": risk_result["band"],
-                "risk_score": risk_result["score"],
+                "risk_band": risk_result.get("combined_band", risk_result.get("band", "Unknown")),
+                "risk_score": risk_result.get("combined_score", risk_result.get("score", 0)),
                 "state": row["state"],
                 "pipeline_status": row["last_pipeline_status"],
                 "notes_count_24h": row["notes_count_24h"],
@@ -172,7 +172,7 @@ async def get_top_blockers(
         for row in results:
             # Get risk score (with fallback for missing data)
             try:
-                risk_result = risk_service.calculate_risk(row["mr_id"])
+                risk_result = await risk_service.calculate_risk(row["mr_id"])
             except Exception as e:
                 logger.warning(f"Risk calculation failed for MR {row['mr_id']}: {e}")
                 risk_result = {"band": "Unknown", "score": 0}
@@ -184,8 +184,8 @@ async def get_top_blockers(
                 "author": f"User {row['author_id']}",  # TODO: Get actual user name
                 "assignee": f"User {row['assignee_id']}" if row["assignee_id"] else None,
                 "age_hours": row["age_hours"],
-                "risk_band": risk_result["band"],
-                "risk_score": risk_result["score"],
+                "risk_band": risk_result.get("combined_band", risk_result.get("band", "Unknown")),
+                "risk_score": risk_result.get("combined_score", risk_result.get("score", 0)),
                 "blocking_reason": f"Open for {row['age_hours']} hours",
                 "state": row["state"],
                 "pipeline_status": row["last_pipeline_status"],

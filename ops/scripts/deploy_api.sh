@@ -61,7 +61,7 @@ gcloud run deploy $SERVICE_NAME \
     --timeout 300 \
     --concurrency 80 \
     --set-env-vars "GCP_PROJECT_ID=$PROJECT_ID,BQ_DATASET_RAW=mergemind_raw,BQ_DATASET_MODELED=mergemind,VERTEX_LOCATION=$REGION" \
-    --set-secrets "GITLAB_TOKEN=gitlab-token:latest,SLACK_SIGNING_SECRET=slack-signing-secret:latest,SLACK_BOT_TOKEN=slack-bot-token:latest"
+    --set-secrets "GITLAB_TOKEN=gitlab-token:latest"
 
 # Get service URL
 SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --region=$REGION --format="value(status.url)")

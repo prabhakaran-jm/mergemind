@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { AlertTriangle, Clock, User, GitBranch } from 'lucide-react'
 import axios from 'axios'
 
@@ -16,9 +16,9 @@ interface Blocker {
   notes_count_24h: number
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'
+const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'
 
-export const BlockersCard: React.FC = () => {
+export const BlockersCard = () => {
   const [blockers, setBlockers] = useState<Blocker[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

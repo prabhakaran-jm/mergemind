@@ -14,6 +14,16 @@ export default defineConfig({
       },
     },
   },
+  preview: {
+    port: 8080,
+    host: '0.0.0.0',
+    allowedHosts: [
+      'mergemind-ui-epjxxjzzfq-uc.a.run.app',
+      'mergemind-ui-812918665937.us-central1.run.app',
+      'localhost',
+      '127.0.0.1'
+    ]
+  },
   build: {
     outDir: 'dist',
     sourcemap: true,

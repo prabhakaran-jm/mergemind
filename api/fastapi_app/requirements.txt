@@ -6,7 +6,7 @@ pydantic-settings==2.1.0
 
 # Google Cloud dependencies
 google-cloud-bigquery==3.13.0
-google-cloud-aiplatform==1.38.1
+google-cloud-aiplatform==1.44.0
 
 # HTTP client
 httpx==0.25.2

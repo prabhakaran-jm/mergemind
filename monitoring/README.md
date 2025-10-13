@@ -133,7 +133,6 @@ GRAFANA_ADMIN_PASSWORD=admin
 
 ### Notification Channels
 - **Email**: Admin and team notifications
-- **Slack**: Critical and warning alerts
 - **PagerDuty**: Critical alerts only
 
 ## 📊 Dashboards
@@ -184,8 +183,8 @@ GRAFANA_ADMIN_PASSWORD=admin
 - Reviewer suggestion failures
 
 ### Notification Routing
-- **Critical**: Immediate notification via email, Slack, PagerDuty
-- **Warning**: Delayed notification via email, Slack
+- **Critical**: Immediate notification via email, PagerDuty
+- **Warning**: Delayed notification via email
 - **Business**: Daily summary via email
 
 ## 🛠️ Custom Exporters

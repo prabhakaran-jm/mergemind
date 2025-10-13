@@ -6,7 +6,7 @@ import logging
 from typing import Dict, Any, Optional
 from datetime import datetime, timedelta
 
-from api.fastapi_app.services.vertex_client import vertex_client
+from services.vertex_client import vertex_client
 from ai.summarizer.cache import SummaryCache
 
 logger = logging.getLogger(__name__)

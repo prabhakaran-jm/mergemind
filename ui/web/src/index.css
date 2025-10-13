@@ -65,7 +65,14 @@ button:focus-visible {
     color: #747bff;
   }
   button {
-    background-color: #f9f9f9;
+    background-color: #646cff;
+    color: white;
+    border: 1px solid #646cff;
+  }
+  
+  button:hover {
+    background-color: #535bf2;
+    border-color: #535bf2;
   }
 }
 

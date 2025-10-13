@@ -271,10 +271,6 @@ VERTEX_LOCATION=us-central1
 GITLAB_BASE_URL=https://your-gitlab.com
 GITLAB_TOKEN=glpat-your-token
 
-# Slack Configuration (Optional)
-SLACK_SIGNING_SECRET=your-signing-secret
-SLACK_BOT_TOKEN=xoxb-your-bot-token
-SLACK_COMMAND=/mergemind
 
 # API Configuration
 API_BASE_URL=https://api.mergemind.com
@@ -295,8 +291,6 @@ WORKER_TIMEOUT=300
 ```bash
 # Store secrets in Google Secret Manager
 gcloud secrets create gitlab-token --data-file=- <<< "glpat-your-token"
-gcloud secrets create slack-signing-secret --data-file=- <<< "your-signing-secret"
-gcloud secrets create slack-bot-token --data-file=- <<< "xoxb-your-bot-token"
 
 # Grant access to service account
 gcloud secrets add-iam-policy-binding gitlab-token \

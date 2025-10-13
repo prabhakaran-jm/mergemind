@@ -12,7 +12,6 @@ help:
 	@echo "  dbt.test    - Test dbt models"
 	@echo "  seed        - Seed demo data"
 	@echo "  deploy.api  - Deploy API to Cloud Run"
-	@echo "  deploy.bot  - Deploy Slack bot to Cloud Run"
 	@echo "  clean       - Clean build artifacts"
 
 # Development targets
@@ -55,9 +54,6 @@ deploy.api:
 	@echo "Deploying API to Cloud Run..."
 	bash ops/scripts/deploy_api.sh
 
-deploy.bot:
-	@echo "Deploying Slack bot to Cloud Run..."
-	bash ops/scripts/deploy_bot.sh
 
 deploy.ui:
 	@echo "Deploying UI to Cloud Run..."

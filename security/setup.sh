@@ -638,7 +638,6 @@ graph TB
     subgraph "Application Layer"
         API[FastAPI Application]
         UI[React Application]
-        BOT[Slack Bot]
     end
     
     subgraph "Data Layer"

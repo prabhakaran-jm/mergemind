@@ -258,7 +258,6 @@ def get_secret(secret_id: str):
 
 # Usage
 gitlab_token = get_secret("gitlab-token")
-slack_bot_token = get_secret("slack-bot-token")
 ```
 
 ### Encryption in Transit
@@ -893,11 +892,9 @@ class SecurityIncidentResponse:
         Immediate action required.
         """
         
-        # Send to security team Slack channel
-        slack_client.chat_postMessage(
-            channel="#security-alerts",
-            text=alert_message
-        )
+        # Send to security team notification channel
+        # Implementation depends on notification system
+        pass
     
     def isolate_systems(self, affected_systems: List[str]):
         """Isolate affected systems."""

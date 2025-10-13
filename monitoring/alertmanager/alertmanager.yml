@@ -64,8 +64,9 @@ receivers:
           - {{ .Annotations.summary }}
           {{ end }}
     
-    slack_configs:
-      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+    email_configs:
+      - to: 'alerts@mergemind.com'
+        subject: 'MergeMind Alert: {{ .GroupLabels.alertname }}'
         channel: '#alerts-critical'
         title: '🚨 Critical Alert'
         text: |
@@ -95,8 +96,9 @@ receivers:
           Time: {{ .StartsAt }}
           Runbook: {{ .Annotations.runbook_url }}
     
-    slack_configs:
-      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+    email_configs:
+      - to: 'alerts@mergemind.com'
+        subject: 'MergeMind Alert: {{ .GroupLabels.alertname }}'
         channel: '#alerts-warning'
         title: '⚠️ Warning Alert'
         text: |

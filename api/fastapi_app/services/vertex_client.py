@@ -9,7 +9,7 @@ from typing import Dict, Any, Optional
 from google.cloud import aiplatform
 from google.cloud.aiplatform.gapic.schema import predict
 import vertexai
-from vertexai.generative_models import GenerativeModel
+from vertexai.preview.generative_models import GenerativeModel
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ class VertexAIClient:
         vertexai.init(project=self.project_id, location=self.location)
         
         # Initialize Gemini model
-        self.model = GenerativeModel("gemini-1.5-pro")
+        self.model = GenerativeModel("gemini-2.5-flash-lite")
         
         logger.info(f"Vertex AI client initialized for project: {self.project_id}")
     
@@ -74,7 +74,7 @@ class VertexAIClient:
     def summarize_diff(self, title: str, description: str, files: list, 
                       additions: int, deletions: int, diff_snippets: str) -> Dict[str, Any]:
         """
-        Summarize a merge request diff using Gemini 1.5.
+        Summarize a merge request diff using Gemini 1.5 Pro.
         
         Args:
             title: Merge request title

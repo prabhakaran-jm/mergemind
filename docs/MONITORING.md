@@ -354,11 +354,12 @@ annotations:
       Description: {{ .Annotations.description }}
       Time: {{ .StartsAt }}
 
-# Slack notifications
-- name: slack-alerts
-  type: slack
+# Email notifications
+- name: email-alerts
+  type: email
   config:
-    webhook_url: "https://hooks.slack.com/services/..."
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
     channel: "#alerts"
     title: "MergeMind Alert"
     text: |
