@@ -109,6 +109,7 @@ infra/gitlab/scripts/config.production
 ingestion/fivetran_connector/config.env
 ingestion/fivetran_connector/config.env.local
 ingestion/fivetran_connector/configuration.json
+ingestion/fivetran_connector/secrets.json
 ingestion/fivetran_connector/files/
 ingestion/fivetran_connector/myenv/
 ingestion/fivetran_connector/__pycache__/
