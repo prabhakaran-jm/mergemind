@@ -28,7 +28,7 @@ resource "google_project_service" "apis" {
     "iam.googleapis.com",                  # Identity and Access Management (for service accounts)
     "secretmanager.googleapis.com",        # Secret Manager (for GitLab token)
     "run.googleapis.com",                  # Cloud Run
-    "cloudbuild.googleapis.com",           # Cloud Build (for Docker images)
+    "cloudbuild.googleapis.com",           # Cloud Build (for dbt automation)
     "containerregistry.googleapis.com",    # Container Registry (for Docker images)
   ])
 
@@ -205,4 +205,47 @@ output "vpc_network" {
 output "subnet_name" {
   description = "Subnet Name (using existing)"
   value       = "default"
+}
+
+# Service Account for dbt Cloud Build
+resource "google_service_account" "dbt_cloud_build" {
+  account_id   = "dbt-cloud-build-sa"
+  display_name = "dbt Cloud Build Service Account"
+  description  = "Service account for dbt automation via Cloud Build"
+}
+
+# IAM bindings for dbt service account
+resource "google_project_iam_member" "dbt_bigquery_editor" {
+  project = var.project_id
+  role    = "roles/bigquery.dataEditor"
+  member  = "serviceAccount:${google_service_account.dbt_cloud_build.email}"
+}
+
+resource "google_project_iam_member" "dbt_cloud_build_builder" {
+  project = var.project_id
+  role    = "roles/cloudbuild.builds.builder"
+  member  = "serviceAccount:${google_service_account.dbt_cloud_build.email}"
+}
+
+# Cloud Build Trigger for dbt automation
+resource "google_cloudbuild_trigger" "dbt_automation" {
+  name        = "dbt-transform-trigger"
+  description = "Automatically run dbt when GitLab data is updated"
+  location    = "us-central1"
+
+  github {
+    owner = "prabhakaran-jm"
+    name  = "mergemind"
+    push {
+      branch = "^master$"
+    }
+  }
+
+  service_account = google_service_account.dbt_cloud_build.id
+
+  filename = "warehouse/bigquery/dbt/cloudbuild-trigger.yaml"
+
+  substitutions = {
+    _GCP_PROJECT_ID = var.project_id
+  }
 }

@@ -130,3 +130,12 @@ output "deployment_info" {
     environment       = var.environment
   }
 }
+
+output "dbt_cloud_build_config" {
+  description = "dbt Cloud Build configuration"
+  value = {
+    service_account_email = google_service_account.dbt_cloud_build.email
+    trigger_name         = google_cloudbuild_trigger.dbt_automation.name
+    trigger_id          = google_cloudbuild_trigger.dbt_automation.trigger_id
+  }
+}
