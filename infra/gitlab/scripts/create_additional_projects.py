@@ -10,8 +10,14 @@ from typing import Dict, List, Optional
 from gitlab_manager import GitLabManager, get_project_templates
 
 # Configuration
-GITLAB_BASE_URL = os.getenv('GITLAB_BASE_URL', 'https://35.202.37.189.sslip.io')
-GITLAB_TOKEN = os.getenv('GITLAB_TOKEN', '')
+GITLAB_BASE_URL = os.getenv('GITLAB_BASE_URL')
+GITLAB_TOKEN = os.getenv('GITLAB_TOKEN')
+
+# Validate required environment variables
+if not GITLAB_BASE_URL:
+    raise ValueError("GITLAB_BASE_URL environment variable is required")
+if not GITLAB_TOKEN:
+    raise ValueError("GITLAB_TOKEN environment variable is required")
 
 def get_additional_project_templates() -> Dict[str, Dict]:
     """Get additional project templates for more diverse testing"""

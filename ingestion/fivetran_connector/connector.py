@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # Default configuration (will be overridden by Fivetran configuration)
 DEFAULT_CONFIG = {
     "gitlab_token": os.getenv("GITLAB_TOKEN", ""),
-    "gitlab_base_url": os.getenv("GITLAB_BASE_URL", "https://35.202.37.189.sslip.io"),
+    "gitlab_base_url": os.getenv("GITLAB_BASE_URL", ""),
     "gitlab_project_ids": os.getenv("GITLAB_PROJECT_IDS", "4,5,6,7,8,9"),
     "start_date": "2024-01-01T00:00:00Z",
     "sync_projects_table": True,
@@ -253,6 +253,11 @@ def update(configuration: Dict[str, Any] = None, state: Dict[str, Any] = None) -
         logger.error(f"Missing gitlab_token. Available config keys: {list(config.keys())}")
         logger.error(f"Configuration received: {configuration}")
         raise ValueError("gitlab_token is required in configuration")
+    
+    if not config.get("gitlab_base_url"):
+        logger.error(f"Missing gitlab_base_url. Available config keys: {list(config.keys())}")
+        logger.error(f"Configuration received: {configuration}")
+        raise ValueError("gitlab_base_url is required in configuration")
     
     # Get project IDs (dynamic discovery or configured)
     if config.get("auto_discover_projects", False):
