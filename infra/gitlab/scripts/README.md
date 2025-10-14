@@ -27,11 +27,15 @@ This will:
 
 ### Configuration
 
-Update `config.env` with your GitLab settings:
+Create a `config.env` file from the example:
 
 ```bash
-GITLAB_BASE_URL=https://your-gitlab-instance.com
-GITLAB_TOKEN=your-gitlab-token
+# Copy the example file
+cp config.env.example config.env
+
+# Edit with your actual values
+GITLAB_BASE_URL=https://your-gitlab-instance.sslip.io
+GITLAB_TOKEN=glpat-your-token-here
 GITLAB_PROJECT_IDS=4,5,6,7,8,9
 ```
 

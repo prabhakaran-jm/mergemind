@@ -1,6 +1,6 @@
 {
-  "gitlab_token": "glpat-LEivq-E39j1hBGKKxBwm4W86MQp1OjEH.01.0w19hwbso",
-  "gitlab_base_url": "https://35.202.37.189.sslip.io",
+  "gitlab_token": "YOUR_GITLAB_TOKEN_HERE",
+  "gitlab_base_url": "https://YOUR_GITLAB_INSTANCE.sslip.io",
   "auto_discover_projects": "true",
   "project_name_pattern": "*",
   "include_private_projects": "true",

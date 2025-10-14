@@ -98,6 +98,13 @@ service-account-key.json
 dbt.env
 *.env
 
+# GitLab Configuration Files (contain sensitive data)
+infra/gitlab/scripts/config.env
+infra/gitlab/scripts/.env
+infra/gitlab/scripts/*.env
+infra/gitlab/scripts/config.local
+infra/gitlab/scripts/config.production
+
 # Fivetran connector config
 ingestion/fivetran_connector/config.env
 ingestion/fivetran_connector/config.env.local

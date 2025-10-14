@@ -10,8 +10,8 @@ import json
 from typing import Dict, List, Optional
 
 # Configuration
-GITLAB_BASE_URL = 'https://35.202.37.189.sslip.io'
-GITLAB_TOKEN = 'glpat-LEivq-E39j1hBGKKxBwm4W86MQp1OjEH.01.0w19hwbso'
+GITLAB_BASE_URL = os.getenv('GITLAB_BASE_URL', 'https://35.202.37.189.sslip.io')
+GITLAB_TOKEN = os.getenv('GITLAB_TOKEN', '')
 
 class GitLabManager:
     def __init__(self, base_url: str, token: str):
