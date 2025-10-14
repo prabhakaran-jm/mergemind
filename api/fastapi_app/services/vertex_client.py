@@ -10,6 +10,7 @@ from google.cloud import aiplatform
 from google.cloud.aiplatform.gapic.schema import predict
 import vertexai
 from vertexai.preview.generative_models import GenerativeModel
+from .config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +20,9 @@ class VertexAIClient:
     
     def __init__(self):
         """Initialize Vertex AI client."""
-        self.project_id = os.getenv("GCP_PROJECT_ID")
-        self.location = os.getenv("VERTEX_LOCATION", "europe-west2")
+        settings = get_settings()
+        self.project_id = settings.gcp_project_id
+        self.location = settings.vertex_location
         
         if not self.project_id:
             raise ValueError("GCP_PROJECT_ID environment variable is required")
@@ -214,5 +216,20 @@ class VertexAIClient:
             return False
 
 
-# Global instance
-vertex_client = VertexAIClient()
+# Global instance - lazy initialization
+_vertex_client_instance = None
+
+def get_vertex_client():
+    """Get or create Vertex AI client instance."""
+    global _vertex_client_instance
+    if _vertex_client_instance is None:
+        _vertex_client_instance = VertexAIClient()
+    return _vertex_client_instance
+
+class LazyVertexClient:
+    """Lazy wrapper for Vertex AI client."""
+    def __getattr__(self, name):
+        return getattr(get_vertex_client(), name)
+
+# For backward compatibility - this will only initialize when first accessed
+vertex_client = LazyVertexClient()

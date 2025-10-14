@@ -10,6 +10,7 @@ from google.cloud import bigquery
 from google.cloud.exceptions import NotFound
 import time
 from functools import wraps
+from .config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -38,19 +39,24 @@ class BigQueryClient:
     """BigQuery client with retry logic and error handling."""
     
     def __init__(self):
-        """Initialize BigQuery client with configuration from environment."""
-        self.project_id = os.getenv("GCP_PROJECT_ID")
-        self.dataset_raw = os.getenv("BQ_DATASET_RAW", "mergemind_raw")
-        self.dataset_modeled = os.getenv("BQ_DATASET_MODELED", "mergemind")
+        """Initialize BigQuery client with configuration from settings."""
+        settings = get_settings()
+        self.project_id = settings.gcp_project_id
+        self.dataset_raw = settings.bq_dataset_raw
+        self.dataset_modeled = settings.bq_dataset_modeled
+        self._client = None
         
         if not self.project_id:
             raise ValueError("GCP_PROJECT_ID environment variable is required")
-        
-        # Initialize BigQuery client
-        self.client = bigquery.Client(project=self.project_id)
-        
-        logger.info(f"BigQuery client initialized for project: {self.project_id}")
-        logger.info(f"Raw dataset: {self.dataset_raw}, Modeled dataset: {self.dataset_modeled}")
+    
+    @property
+    def client(self):
+        """Lazy initialization of BigQuery client."""
+        if self._client is None:
+            self._client = bigquery.Client(project=self.project_id)
+            logger.info(f"BigQuery client initialized for project: {self.project_id}")
+            logger.info(f"Raw dataset: {self.dataset_raw}, Modeled dataset: {self.dataset_modeled}")
+        return self._client
     
     @retry_with_backoff(max_retries=3, backoff_factor=1.0)
     def query(self, sql: str, **params) -> List[Dict[str, Any]]:
@@ -163,5 +169,20 @@ class BigQueryClient:
             return False
 
 
-# Global instance
-bigquery_client = BigQueryClient()
+# Global instance - lazy initialization
+_bigquery_client_instance = None
+
+def get_bigquery_client():
+    """Get or create BigQuery client instance."""
+    global _bigquery_client_instance
+    if _bigquery_client_instance is None:
+        _bigquery_client_instance = BigQueryClient()
+    return _bigquery_client_instance
+
+class LazyBigQueryClient:
+    """Lazy wrapper for BigQuery client."""
+    def __getattr__(self, name):
+        return getattr(get_bigquery_client(), name)
+
+# For backward compatibility - this will only initialize when first accessed
+bigquery_client = LazyBigQueryClient()

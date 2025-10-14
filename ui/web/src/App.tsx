@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
-import { GitBranch, AlertTriangle, CheckCircle, Clock, User } from 'lucide-react'
+import { GitBranch, AlertTriangle, CheckCircle, Clock, User, Brain, Target } from 'lucide-react'
 import axios from 'axios'
+import { AIInsightsCard } from './components/AIInsightsCard'
+import { AIRecommendationsCard } from './components/AIRecommendationsCard'
+import { AIDashboardCard } from './components/AIDashboardCard'
 
 interface MRItem {
   mr_id: number
@@ -72,6 +75,9 @@ function App() {
   const [reviewers, setReviewers] = useState<Reviewer[]>([])
   const [showModal, setShowModal] = useState(false)
   const [modalLoading, setModalLoading] = useState(false)
+  const [showAIInsights, setShowAIInsights] = useState(false)
+  const [showAIRecommendations, setShowAIRecommendations] = useState(false)
+  const [showAIDashboard, setShowAIDashboard] = useState(false)
 
   useEffect(() => {
     fetchMRs()
@@ -163,8 +169,32 @@ function App() {
   return (
     <div className="container">
       <div className="header">
-        <h1>MergeMind</h1>
-        <p>AI-Powered Merge Request Analysis</p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <h1>MergeMind</h1>
+            <p>AI-Powered Merge Request Analysis</p>
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button 
+              onClick={() => setShowAIDashboard(true)}
+              style={{
+                background: '#7c3aed',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '0.9em'
+              }}
+            >
+              <Brain className="w-4 h-4" />
+              AI Dashboard
+            </button>
+          </div>
+        </div>
       </div>
 
       <table className="table">
@@ -210,9 +240,29 @@ function App() {
               <td>{mr.approvals_left}</td>
               <td>{mr.notes_count_24h} notes</td>
               <td>
-                <button onClick={() => handleSummaryClick(mr.mr_id)}>
-                  Summary
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={() => handleSummaryClick(mr.mr_id)}>
+                    Summary
+                  </button>
+                  <button 
+                    onClick={() => setShowAIInsights(true)}
+                    style={{
+                      background: '#7c3aed',
+                      color: 'white',
+                      border: 'none',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '0.8em',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <Brain className="w-3 h-3" />
+                    AI
+                  </button>
+                </div>
               </td>
             </tr>
           ))}
@@ -304,8 +354,117 @@ function App() {
                     </ul>
                   </div>
                 )}
+
+                {/* AI Actions */}
+                <div className="summary-section">
+                  <h3>AI-Powered Analysis</h3>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <button 
+                      onClick={() => {
+                        setShowModal(false)
+                        setShowAIInsights(true)
+                      }}
+                      style={{
+                        background: '#7c3aed',
+                        color: 'white',
+                        border: 'none',
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '0.9em'
+                      }}
+                    >
+                      <Brain className="w-4 h-4" />
+                      AI Insights
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setShowModal(false)
+                        setShowAIRecommendations(true)
+                      }}
+                      style={{
+                        background: '#28a745',
+                        color: 'white',
+                        border: 'none',
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '0.9em'
+                      }}
+                    >
+                      <Target className="w-4 h-4" />
+                      AI Recommendations
+                    </button>
+                  </div>
+                </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* AI Insights Modal */}
+      {showAIInsights && selectedMR && (
+        <div className="modal">
+          <div className="modal-content" style={{ maxWidth: '800px', maxHeight: '90vh', overflow: 'auto' }}>
+            <div className="modal-header">
+              <h2 className="modal-title">
+                AI Insights - {selectedMR.title}
+              </h2>
+              <button 
+                className="close-button"
+                onClick={() => setShowAIInsights(false)}
+              >
+                ×
+              </button>
+            </div>
+            <AIInsightsCard mrId={selectedMR.mr_id} onClose={() => setShowAIInsights(false)} />
+          </div>
+        </div>
+      )}
+
+      {/* AI Recommendations Modal */}
+      {showAIRecommendations && selectedMR && (
+        <div className="modal">
+          <div className="modal-content" style={{ maxWidth: '800px', maxHeight: '90vh', overflow: 'auto' }}>
+            <div className="modal-header">
+              <h2 className="modal-title">
+                AI Recommendations - {selectedMR.title}
+              </h2>
+              <button 
+                className="close-button"
+                onClick={() => setShowAIRecommendations(false)}
+              >
+                ×
+              </button>
+            </div>
+            <AIRecommendationsCard mrId={selectedMR.mr_id} onClose={() => setShowAIRecommendations(false)} />
+          </div>
+        </div>
+      )}
+
+      {/* AI Dashboard Modal */}
+      {showAIDashboard && (
+        <div className="modal">
+          <div className="modal-content" style={{ maxWidth: '900px', maxHeight: '90vh', overflow: 'auto' }}>
+            <div className="modal-header">
+              <h2 className="modal-title">
+                AI Dashboard
+              </h2>
+              <button 
+                className="close-button"
+                onClick={() => setShowAIDashboard(false)}
+              >
+                ×
+              </button>
+            </div>
+            <AIDashboardCard />
           </div>
         </div>
       )}

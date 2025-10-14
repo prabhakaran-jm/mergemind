@@ -218,5 +218,20 @@ class GitLabClient:
             return False
 
 
-# Global instance
-gitlab_client = GitLabClient()
+# Global instance - lazy initialization
+_gitlab_client_instance = None
+
+def get_gitlab_client():
+    """Get or create GitLab client instance."""
+    global _gitlab_client_instance
+    if _gitlab_client_instance is None:
+        _gitlab_client_instance = GitLabClient()
+    return _gitlab_client_instance
+
+class LazyGitLabClient:
+    """Lazy wrapper for GitLab client."""
+    def __getattr__(self, name):
+        return getattr(get_gitlab_client(), name)
+
+# For backward compatibility - this will only initialize when first accessed
+gitlab_client = LazyGitLabClient()

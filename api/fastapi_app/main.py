@@ -55,10 +55,11 @@ app.add_middleware(MetricsMiddleware)
 app.include_router(health.router, prefix="/api/v1", tags=["health"])
 
 # Import and include other routers
-from routers import mrs, mr, metrics
+from routers import mrs, mr, metrics, ai_insights
 app.include_router(mrs.router, prefix="/api/v1", tags=["merge-requests"])
 app.include_router(mr.router, prefix="/api/v1", tags=["merge-request"])
 app.include_router(metrics.router, prefix="/api/v1", tags=["metrics"])
+app.include_router(ai_insights.router, prefix="/api/v1", tags=["ai-insights"])
 
 
 @app.get("/")
@@ -68,11 +69,11 @@ async def root():
 
 
 if __name__ == "__main__":
-    port = int(os.getenv("API_PORT", 8080))
+    port = int(os.getenv("PORT", os.getenv("API_PORT", 8080)))
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
         port=port,
-        reload=True,
+        reload=False,  # Disable reload in production
         log_level="info"
     )

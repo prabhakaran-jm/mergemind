@@ -43,10 +43,20 @@ class Settings(BaseSettings):
         case_sensitive = False
 
 
-# Global settings instance
-settings = Settings()
-
+# Global settings instance - lazy initialization
+_settings_instance = None
 
 def get_settings() -> Settings:
-    """Get application settings."""
-    return settings
+    """Get application settings with lazy initialization."""
+    global _settings_instance
+    if _settings_instance is None:
+        _settings_instance = Settings()
+    return _settings_instance
+
+# For backward compatibility - this will only initialize when first accessed
+class LazySettings:
+    """Lazy wrapper for settings."""
+    def __getattr__(self, name):
+        return getattr(get_settings(), name)
+
+settings = LazySettings()
