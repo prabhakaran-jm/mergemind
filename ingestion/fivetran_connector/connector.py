@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_CONFIG = {
     "gitlab_token": os.getenv("GITLAB_TOKEN", ""),
     "gitlab_base_url": os.getenv("GITLAB_BASE_URL", ""),
-    "gitlab_project_ids": os.getenv("GITLAB_PROJECT_IDS", "4,5,6,7,8,9"),
+    "gitlab_project_ids": os.getenv("GITLAB_PROJECT_IDS", ""),
     "start_date": "2024-01-01T00:00:00Z",
     "sync_projects_table": True,
     "sync_merge_requests_table": True,
@@ -264,6 +264,10 @@ def update(configuration: Dict[str, Any] = None, state: Dict[str, Any] = None) -
         project_ids = get_project_ids(config)
         logger.info(f"GitLab connector initialized with dynamic discovery: {len(project_ids)} projects")
     else:
+        # Only require gitlab_project_ids when not using dynamic discovery
+        if not config.get("gitlab_project_ids"):
+            logger.error("gitlab_project_ids is required when auto_discover_projects is false")
+            raise ValueError("gitlab_project_ids is required when not using dynamic discovery")
         project_ids = [int(pid.strip()) for pid in config['gitlab_project_ids'].split(",")]
         logger.info(f"GitLab connector initialized for configured projects: {','.join(map(str, project_ids))}")
     

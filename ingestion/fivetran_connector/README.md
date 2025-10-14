@@ -81,7 +81,7 @@ A production-ready custom Fivetran connector that extracts data from GitLab API 
 - `max_projects_to_sync` - Maximum projects to sync ("100")
 
 ### Static Project IDs (Legacy)
-- `gitlab_project_ids` - Comma-separated project IDs ("4,5,6,7,8,9")
+- `gitlab_project_ids` - Comma-separated project IDs ("4,5,6,7,8,9") - **Only required when `auto_discover_projects` is "false"**
 
 ### Optional
 - `start_date` - Limit historical data (ISO format: "2025-01-01T00:00:00Z")
