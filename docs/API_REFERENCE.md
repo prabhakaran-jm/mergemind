@@ -9,9 +9,10 @@ Complete reference documentation for the MergeMind API endpoints, including requ
 3. [Rate Limiting](#rate-limiting)
 4. [Error Handling](#error-handling)
 5. [Endpoints](#endpoints)
-6. [Data Models](#data-models)
-7. [Examples](#examples)
-8. [SDKs](#sdks)
+6. [Event-Driven Pipeline](#event-driven-pipeline)
+7. [Data Models](#data-models)
+8. [Examples](#examples)
+9. [SDKs](#sdks)
 
 ## Authentication
 
@@ -74,6 +75,130 @@ All errors return JSON with the following structure:
 | 503 | Service Unavailable | External service down |
 
 ## Endpoints
+
+## Event-Driven Pipeline
+
+The MergeMind platform includes an event-driven data pipeline that automatically processes GitLab data. The pipeline is triggered by Fivetran connector syncs and runs dbt transformations.
+
+### Cloud Function Endpoint
+
+#### POST /dbt-trigger-function
+Triggers dbt transformations when called by Fivetran connector.
+
+**Authentication:** Bearer token required
+**Content-Type:** application/json
+
+**Request Body:**
+```json
+{
+  "source": "fivetran_connector",
+  "action": "run_dbt",
+  "sync_info": {
+    "sync_time": "2024-01-01T12:00:00Z",
+    "project_count": 12,
+    "sync_interval_hours": 1
+  }
+}
+```
+
+**Response (Success):**
+```json
+{
+  "status": "success",
+  "message": "dbt run completed successfully",
+  "source": "fivetran_connector",
+  "sync_info": {
+    "sync_time": "2024-01-01T12:00:00Z",
+    "project_count": 12,
+    "sync_interval_hours": 1
+  },
+  "timestamp": "2024-01-01T12:05:00Z"
+}
+```
+
+**Response (Error):**
+```json
+{
+  "status": "error",
+  "message": "dbt run failed",
+  "source": "fivetran_connector",
+  "sync_info": {
+    "sync_time": "2024-01-01T12:00:00Z",
+    "project_count": 12,
+    "sync_interval_hours": 1
+  },
+  "timestamp": "2024-01-01T12:05:00Z"
+}
+```
+
+**Error Codes:**
+- `401`: Unauthorized (invalid or missing Bearer token)
+- `500`: Internal server error (dbt execution failed)
+- `503`: Service unavailable (dependencies not available)
+
+### Pipeline Status Endpoint
+
+#### GET /pipeline/status
+Get current status of the event-driven pipeline.
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "last_sync": "2024-01-01T12:00:00Z",
+  "last_dbt_run": "2024-01-01T12:05:00Z",
+  "sync_frequency_hours": 1,
+  "components": {
+    "fivetran_connector": "healthy",
+    "cloud_function": "healthy",
+    "dbt_models": "healthy",
+    "bigquery": "healthy"
+  },
+  "metrics": {
+    "total_syncs_today": 24,
+    "successful_dbt_runs": 23,
+    "failed_dbt_runs": 1,
+    "average_dbt_duration_seconds": 45
+  }
+}
+```
+
+### Pipeline Metrics Endpoint
+
+#### GET /pipeline/metrics
+Get detailed metrics about pipeline performance.
+
+**Query Parameters:**
+- `time_range` (optional): Time range for metrics (`1h`, `24h`, `7d`, `30d`)
+- `component` (optional): Filter by component (`fivetran`, `dbt`, `bigquery`)
+
+**Response:**
+```json
+{
+  "time_range": "24h",
+  "timestamp": "2024-01-01T12:00:00Z",
+  "metrics": {
+    "sync_metrics": {
+      "total_syncs": 24,
+      "successful_syncs": 23,
+      "failed_syncs": 1,
+      "average_sync_duration_seconds": 120
+    },
+    "dbt_metrics": {
+      "total_runs": 23,
+      "successful_runs": 22,
+      "failed_runs": 1,
+      "average_duration_seconds": 45,
+      "models_processed": 4
+    },
+    "data_metrics": {
+      "records_processed": 1500,
+      "tables_updated": 3,
+      "data_freshness_minutes": 5
+    }
+  }
+}
+```
 
 ### Health Check
 

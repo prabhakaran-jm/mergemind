@@ -65,7 +65,7 @@ resource "google_storage_bucket" "dbt_function_source" {
 resource "google_cloudfunctions2_function" "dbt_trigger_function" {
   name        = "dbt-trigger-function"
   location    = var.region
-  description = "HTTP-triggered Cloud Function that runs dbt transformations"
+  description = "HTTP-triggered Cloud Function that runs dbt transformations (v2 with dbt dependencies)"
 
   build_config {
     runtime     = "python311"

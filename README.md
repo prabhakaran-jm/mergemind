@@ -4,12 +4,14 @@ AI-powered merge request analysis and insights platform for GitLab, providing ri
 
 ## 🚀 Features
 
+- **Event-Driven Data Pipeline**: Real-time GitLab → Fivetran → BigQuery → dbt transformations
 - **AI-Powered Analysis**: Automated diff summarization using Vertex AI Gemini 2.5 Flash
 - **Risk Scoring**: Deterministic risk assessment for merge requests
 - **Reviewer Suggestions**: Intelligent reviewer recommendations based on co-review graph
 - **Real-time Insights**: Live MR analysis with risk badges and blocking detection
 - **Comprehensive API**: RESTful API for all MR analysis features
 - **Modern UI**: React-based dashboard for MR management and analytics
+- **Automated dbt Runs**: Cloud Function triggers dbt transformations on new data
 
 ## 📋 Table of Contents
 
@@ -87,9 +89,14 @@ graph TB
         FV[Fivetran Connector]
     end
     
-    subgraph "Data Layer"
-        BQ[BigQuery]
+    subgraph "Event-Driven Pipeline"
+        CF[Cloud Function]
         dbt[dbt Models]
+    end
+    
+    subgraph "Data Layer"
+        BQ_RAW[BigQuery Raw<br/>mergemind_raw]
+        BQ_MODELED[BigQuery Modeled<br/>mergemind]
     end
     
     subgraph "AI Services"
@@ -117,15 +124,16 @@ graph TB
     end
     
     GL --> FV
-    FV --> BQ
-    BQ --> dbt
-    dbt --> API
+    FV --> BQ_RAW
+    FV --> CF
+    CF --> dbt
+    dbt --> BQ_MODELED
+    BQ_MODELED --> API
     API --> VAI
     API --> RS
     API --> RISK
     API --> SUM
     API --> UI
-    API --> BOT
     UI --> DASH
     API --> RUN
     RUN --> LB
@@ -135,7 +143,9 @@ graph TB
 ### Core Components
 
 - **Data Ingestion**: Fivetran custom connector for GitLab data
-- **Data Warehouse**: BigQuery with dbt for data modeling
+- **Event-Driven Pipeline**: Cloud Function triggers dbt runs on new data
+- **Data Warehouse**: BigQuery with raw (`mergemind_raw`) and modeled (`mergemind`) datasets
+- **dbt Transformations**: Automated data modeling and transformations
 - **AI Services**: Vertex AI for diff summarization and analysis
 - **API Layer**: FastAPI with comprehensive endpoints
 - **Frontend**: React dashboard for MR management
@@ -216,6 +226,65 @@ dbt run
 dbt test
 ```
 
+## 🔄 Event-Driven Data Pipeline
+
+The MergeMind platform features a fully automated event-driven data pipeline that processes GitLab data in real-time:
+
+### Pipeline Flow
+
+1. **GitLab Events** → New merge requests, updates, or changes
+2. **Fivetran Sync** → Custom connector syncs data to BigQuery
+3. **Cloud Function Trigger** → Fivetran calls Cloud Function on sync completion
+4. **dbt Transformations** → Automated data modeling and transformations
+5. **BigQuery Updates** → Transformed data available for API consumption
+
+### Key Components
+
+#### Fivetran Connector
+- **Location**: `ingestion/fivetran_connector/`
+- **Features**: Custom GitLab API connector with dbt trigger integration
+- **Configuration**: Environment variables for GitLab and Cloud Function URLs
+- **Sync Frequency**: Configurable (default: 1 hour)
+
+#### Cloud Function (dbt Trigger)
+- **Location**: `infra/gcp/terraform/cloud_function/`
+- **Purpose**: Triggers dbt runs when new data arrives
+- **Runtime**: Python 3.11 with dbt-core and dbt-bigquery
+- **Timeout**: 5 minutes (configurable)
+- **Authentication**: Bearer token for security
+
+#### dbt Models
+- **Location**: `warehouse/bigquery/dbt/models/`
+- **Transformations**: Raw data → Clean, modeled datasets
+- **Output**: `mergemind` dataset with business-ready views
+
+### Deployment
+
+```bash
+# Deploy infrastructure
+cd infra/gcp/terraform
+terraform init
+terraform plan
+terraform apply
+
+# Deploy Fivetran connector
+cd ingestion/fivetran_connector
+# Configure fivetran_config.json with your settings
+# Deploy to Fivetran platform
+
+# Test the pipeline
+# Create a merge request in GitLab
+# Monitor Fivetran sync logs
+# Verify dbt transformations in BigQuery
+```
+
+### Monitoring
+
+- **Fivetran Logs**: Monitor sync status and dbt trigger calls
+- **Cloud Function Logs**: Check dbt execution and errors
+- **BigQuery**: Verify data transformations and model updates
+- **API Endpoints**: Test data availability and freshness
+
 ## ⚙️ Configuration
 
 ### Environment Variables
@@ -231,6 +300,9 @@ VERTEX_LOCATION=us-central1
 GITLAB_BASE_URL=https://your-gitlab.com
 GITLAB_TOKEN=glpat-your-token
 
+# Event-Driven Pipeline Configuration
+DBT_TRIGGER_URL=https://dbt-trigger-function-xxx-uc.a.run.app
+DBT_TRIGGER_AUTH_TOKEN=your-secure-token-here
 
 # API Configuration
 API_BASE_URL=https://api.mergemind.com

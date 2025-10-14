@@ -108,12 +108,9 @@ variable "vertex_ai_key_secret_name" {
   default     = "vertex-ai-key"
 }
 
-variable "tags" {
-  description = "Additional tags for resources"
-  type        = map(string)
-  default = {
-    "project"     = "mergemind"
-    "managed-by"  = "terraform"
-    "environment" = "dev"
-  }
+variable "dbt_trigger_auth_token" {
+  description = "Authentication token for dbt trigger Cloud Function"
+  type        = string
+  sensitive   = true
+  default     = "your-secure-token-here"
 }

@@ -10,11 +10,18 @@ output "project_info" {
 }
 
 output "enabled_apis" {
-  description = "GCP APIs enabled (minimal set)"
+  description = "GCP APIs enabled (including event-driven components)"
   value = [
     "aiplatform.googleapis.com",
     "iam.googleapis.com", 
-    "secretmanager.googleapis.com"
+    "secretmanager.googleapis.com",
+    "run.googleapis.com",
+    "cloudbuild.googleapis.com",
+    "containerregistry.googleapis.com",
+    "eventarc.googleapis.com",
+    "pubsub.googleapis.com",
+    "cloudfunctions.googleapis.com",
+    "logging.googleapis.com"
   ]
 }
 
@@ -137,5 +144,19 @@ output "dbt_cloud_build_config" {
     service_account_email = google_service_account.dbt_cloud_build.email
     trigger_name         = google_cloudbuild_trigger.dbt_automation.name
     trigger_id          = google_cloudbuild_trigger.dbt_automation.trigger_id
+  }
+}
+
+output "event_driven_dbt_config" {
+  description = "Event-driven dbt configuration"
+  value = {
+    cloud_function = {
+      name     = google_cloudfunctions2_function.dbt_trigger_function.name
+      location = google_cloudfunctions2_function.dbt_trigger_function.location
+      url      = google_cloudfunctions2_function.dbt_trigger_function.service_config[0].uri
+    }
+    service_account = {
+      function_sa = google_service_account.dbt_trigger_function_sa.email
+    }
   }
 }

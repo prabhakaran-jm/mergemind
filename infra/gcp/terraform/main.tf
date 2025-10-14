@@ -30,6 +30,10 @@ resource "google_project_service" "apis" {
     "run.googleapis.com",                  # Cloud Run
     "cloudbuild.googleapis.com",           # Cloud Build (for dbt automation)
     "containerregistry.googleapis.com",    # Container Registry (for Docker images)
+    "eventarc.googleapis.com",            # Eventarc (for event-driven dbt triggers)
+    "pubsub.googleapis.com",               # Pub/Sub (for event messaging)
+    "cloudfunctions.googleapis.com",       # Cloud Functions (for dbt trigger function)
+    "logging.googleapis.com",             # Cloud Logging (for audit logs)
   ])
 
   service = each.value

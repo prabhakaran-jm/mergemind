@@ -1,6 +1,6 @@
 {
-  "gitlab_token": "YOUR_GITLAB_TOKEN_HERE",
-  "gitlab_base_url": "https://YOUR_GITLAB_INSTANCE.sslip.io",
+  "gitlab_token": "glpat-LEivq-E39j1hBGKKxBwm4W86MQp1OjEH.01.0w19hwbso",
+  "gitlab_base_url": "https://35.202.37.189.sslip.io",
   "auto_discover_projects": "true",
   "project_name_pattern": "*",
   "include_private_projects": "true",
@@ -10,5 +10,7 @@
   "sync_merge_requests_table": "true",
   "sync_users_table": "true",
   "max_records_per_sync": "10000",
-  "sync_interval_hours": "1"
+  "sync_interval_hours": "1",
+  "dbt_trigger_url": "https://dbt-trigger-function-epjxxjzzfq-uc.a.run.app",
+  "dbt_trigger_auth_token": "683c5039be8fde27741701d95ef02a8516d16983db387c345f06f5d7c28a0f5e"
 }

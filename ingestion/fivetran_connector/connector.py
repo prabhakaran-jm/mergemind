@@ -247,6 +247,8 @@ def update(configuration: Dict[str, Any] = None, state: Dict[str, Any] = None) -
     config["include_private_projects"] = config.get("include_private_projects", "true").lower() == "true"
     
     logger.info(f"Configuration keys: {list(config.keys())}")
+    logger.info(f"GitLab base URL: {config.get('gitlab_base_url')}")
+    logger.info(f"GitLab token: {config.get('gitlab_token', '')[:20]}..." if config.get('gitlab_token') else 'Not set')
     
     # Validate required configuration
     if not config.get("gitlab_token"):
@@ -407,6 +409,9 @@ def update(configuration: Dict[str, Any] = None, state: Dict[str, Any] = None) -
     # Note: op.state() is not available in this SDK version, using op.checkpoint()
     yield op.checkpoint(sync_state)
     logger.info("Sync completed successfully")
+    
+    # Trigger dbt run after successful sync
+    _trigger_dbt_run(config, sync_state)
 
 
 def _make_request(url: str, params: Dict[str, Any] | List[tuple] = None, config: Dict[str, Any] = None) -> Dict[str, Any]:
@@ -527,6 +532,68 @@ def _get_user_info(user_id: int, config: Dict[str, Any] = None) -> Optional[Dict
     except Exception as e:
         logger.error(f"Failed to get user {user_id}: {e}")
         return None
+
+
+def _trigger_dbt_run(config: Dict[str, Any], sync_state: Dict[str, Any]) -> None:
+    """
+    Trigger dbt run after successful Fivetran sync.
+    
+    Args:
+        config: Configuration dictionary
+        sync_state: Current sync state information
+    """
+    try:
+        # Get dbt trigger URL from configuration
+        dbt_trigger_url = config.get('dbt_trigger_url')
+        
+        if not dbt_trigger_url:
+            logger.warning("dbt_trigger_url not configured, skipping dbt run")
+            return
+        
+        logger.info(f"Triggering dbt run at: {dbt_trigger_url}")
+        
+        # Prepare sync information
+        sync_info = {
+            'sync_time': sync_state.get('last_sync_time'),
+            'project_count': len(get_project_ids(config)),
+            'sync_interval_hours': config.get('sync_interval_hours', 1)
+        }
+        
+        # Prepare request data
+        request_data = {
+            'source': 'fivetran_connector',
+            'action': 'run_dbt',
+            'sync_info': sync_info
+        }
+        
+        # Make HTTP request to trigger dbt
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        
+        # Add authentication if token is configured
+        auth_token = config.get('dbt_trigger_auth_token')
+        if auth_token:
+            headers['Authorization'] = f'Bearer {auth_token}'
+        
+        response = requests.post(
+            dbt_trigger_url,
+            json=request_data,
+            headers=headers,
+            timeout=300  # 5 minutes timeout for dbt installation and execution
+        )
+        
+        if response.status_code == 200:
+            logger.info("Successfully triggered dbt run")
+            response_data = response.json()
+            logger.info(f"dbt trigger response: {response_data}")
+        else:
+            logger.error(f"Failed to trigger dbt run: {response.status_code} - {response.text}")
+            
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error triggering dbt run: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error triggering dbt run: {e}")
 
 
 # Create connector object for Fivetran SDK

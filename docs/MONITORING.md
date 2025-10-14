@@ -21,9 +21,49 @@ MergeMind implements comprehensive monitoring across multiple layers:
 - **Business Metrics**: MR analysis counts, AI summary generation, reviewer suggestions
 - **Infrastructure Metrics**: CPU, memory, disk usage
 - **External Dependencies**: BigQuery, GitLab, Vertex AI health
+- **Event-Driven Pipeline**: Fivetran syncs, dbt runs, data freshness
 - **SLO Monitoring**: Service level objectives and violations
 
 ## Metrics Collection
+
+### Event-Driven Pipeline Metrics
+
+The event-driven pipeline requires specific monitoring to ensure data freshness and transformation reliability:
+
+```python
+# Pipeline metrics
+PIPELINE_SYNC_COUNT = Counter(
+    'mergemind_pipeline_syncs_total',
+    'Total Fivetran syncs',
+    ['status', 'project_count']
+)
+
+DBT_RUN_COUNT = Counter(
+    'mergemind_dbt_runs_total',
+    'Total dbt runs',
+    ['status', 'models_processed']
+)
+
+DBT_RUN_DURATION = Histogram(
+    'mergemind_dbt_run_duration_seconds',
+    'dbt run duration',
+    ['status']
+)
+
+DATA_FRESHNESS = Gauge(
+    'mergemind_data_freshness_minutes',
+    'Data freshness in minutes',
+    ['dataset', 'table']
+)
+```
+
+#### Key Pipeline Metrics
+
+- **Sync Frequency**: Monitor Fivetran sync intervals
+- **dbt Run Success Rate**: Track successful vs failed transformations
+- **Data Freshness**: Monitor time since last data update
+- **Pipeline Latency**: End-to-end processing time
+- **Error Rates**: Track failures in each pipeline component
 
 ### Application Metrics
 
