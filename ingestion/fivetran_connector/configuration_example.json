@@ -10,5 +10,7 @@
   "auto_discover_projects": "true",
   "project_name_pattern": "*",
   "include_private_projects": "true",
-  "max_projects_to_sync": "100"
+  "max_projects_to_sync": "100",
+  "dbt_trigger_url": "${DBT_TRIGGER_URL}",
+  "dbt_trigger_auth_token": "${DBT_TRIGGER_AUTH_TOKEN}"
 }
