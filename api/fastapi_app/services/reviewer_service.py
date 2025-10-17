@@ -148,16 +148,16 @@ class ReviewerService:
         try:
             sql = """
             SELECT 
-              mr_id,
+              id as mr_id,
               project_id,
               title,
-              additions,
-              deletions,
+              0 as additions,
+              0 as deletions,
               state,
               created_at,
               updated_at
-            FROM `mergemind.mr_activity_view`
-            WHERE mr_id = @mr_id
+            FROM `mergemind_raw.merge_requests`
+            WHERE id = @mr_id
             LIMIT 1
             """
             

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { AlertTriangle, Clock, User, GitBranch } from 'lucide-react'
 import axios from 'axios'
+import { API_BASE_URL } from '../utils/apiConfig'
 
 interface Blocker {
   mr_id: number
@@ -15,8 +16,6 @@ interface Blocker {
   approvals_left: number
   notes_count_24h: number
 }
-
-const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'
 
 export const BlockersCard = () => {
   const [blockers, setBlockers] = useState<Blocker[]>([])

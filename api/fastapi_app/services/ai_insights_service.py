@@ -103,18 +103,18 @@ class AIInsightsService:
             # First try to get basic MR data from mr_activity_view
             basic_query = f"""
             SELECT 
-                mr_id,
+                id as mr_id,
                 project_id,
                 title,
                 author_id,
                 state,
-                last_pipeline_status,
-                last_pipeline_age_min,
-                notes_count_24h,
-                approvals_left,
-                additions,
-                deletions,
-                age_hours,
+                'unknown' as last_pipeline_status,
+                0 as last_pipeline_age_min,
+                0 as notes_count_24h,
+                0 as approvals_left,
+                0 as additions,
+                0 as deletions,
+                TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), created_at, HOUR) AS age_hours,
                 source_branch,
                 target_branch,
                 web_url,
@@ -124,8 +124,8 @@ class AIInsightsService:
                 merged_at,
                 closed_at,
                 CURRENT_TIMESTAMP() as data_freshness
-            FROM `{self.project_id}.mergemind.mr_activity_view`
-            WHERE mr_id = {mr_id}
+            FROM `{self.project_id}.mergemind_raw.merge_requests`
+            WHERE id = {mr_id}
             """
             
             query_job = self.bq_client.query(basic_query)

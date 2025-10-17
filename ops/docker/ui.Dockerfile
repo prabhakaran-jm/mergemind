@@ -13,9 +13,9 @@ RUN npm ci
 # Copy source code
 COPY ui/web/ .
 
-# Set build-time environment variable for API URL
-ARG VITE_API_BASE_URL=https://mergemind-api-epjxxjzzfq-uc.a.run.app/api/v1
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+# Set build-time environment variable for API URL (optional - will use dynamic detection if not set)
+# ARG VITE_API_BASE_URL=https://mergemind-api-epjxxjzzfq-uc.a.run.app/api/v1
+# ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 # Build the application
 RUN npm run build

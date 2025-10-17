@@ -42,7 +42,7 @@ async def list_merge_requests(
         
         # Add cursor-based pagination
         if cursor and cursor != "None":
-            where_conditions.append("mr_id > @cursor")
+            where_conditions.append("id > @cursor")
             params["cursor"] = int(cursor)
         
         where_clause = " AND ".join(where_conditions) if where_conditions else "TRUE"
@@ -50,7 +50,7 @@ async def list_merge_requests(
         
         sql = f"""
         SELECT 
-          mr_id,
+          id as mr_id,
           project_id,
           title,
           author_id,
@@ -58,20 +58,20 @@ async def list_merge_requests(
           created_at,
           updated_at,
           state,
-          age_hours,
-          last_pipeline_status,
-          notes_count_24h,
-          approvals_left,
-          additions,
-          deletions,
+          TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), created_at, HOUR) AS age_hours,
+          'unknown' AS last_pipeline_status,
+          0 AS notes_count_24h,
+          0 AS approvals_left,
+          0 AS additions,
+          0 AS deletions,
           source_branch,
           target_branch,
           web_url,
           merged_at,
           closed_at
-        FROM `mergemind.mr_activity_view`
+        FROM `mergemind_raw.merge_requests`
         WHERE {where_clause}
-        ORDER BY mr_id DESC
+        ORDER BY id DESC
         LIMIT @limit
         """
         
@@ -141,7 +141,7 @@ async def get_top_blockers(
     try:
         sql = """
         SELECT 
-          mr_id,
+          id as mr_id,
           project_id,
           title,
           author_id,
@@ -149,18 +149,18 @@ async def get_top_blockers(
           created_at,
           updated_at,
           state,
-          age_hours,
-          last_pipeline_status,
-          notes_count_24h,
-          approvals_left,
-          additions,
-          deletions,
+          TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), created_at, HOUR) AS age_hours,
+          'unknown' AS last_pipeline_status,
+          0 AS notes_count_24h,
+          0 AS approvals_left,
+          0 AS additions,
+          0 AS deletions,
           source_branch,
           target_branch,
           web_url,
           merged_at,
           closed_at
-        FROM `mergemind.mr_activity_view`
+        FROM `mergemind_raw.merge_requests`
         WHERE state = 'opened'
         ORDER BY age_hours DESC
         LIMIT @limit

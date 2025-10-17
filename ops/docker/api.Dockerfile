@@ -15,8 +15,11 @@ COPY api/fastapi_app/requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY api/fastapi_app/ .
+# Copy application code selectively to avoid cache files
+COPY api/fastapi_app/main.py .
+COPY api/fastapi_app/routers/ ./routers/
+COPY api/fastapi_app/services/ ./services/
+COPY api/fastapi_app/middleware/ ./middleware/
 COPY ai/ ./ai/
 
 # Create non-root user

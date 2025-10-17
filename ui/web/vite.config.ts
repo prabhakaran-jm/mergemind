@@ -15,7 +15,7 @@ export default defineConfig({
     },
   },
   preview: {
-    port: 8080,
+    port: parseInt(process.env.PORT || '8080'),
     host: '0.0.0.0',
     allowedHosts: [
       'mergemind-ui-epjxxjzzfq-uc.a.run.app',

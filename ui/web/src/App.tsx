@@ -4,6 +4,7 @@ import axios from 'axios'
 import { AIInsightsCard } from './components/AIInsightsCard'
 import { AIRecommendationsCard } from './components/AIRecommendationsCard'
 import { AIDashboardCard } from './components/AIDashboardCard'
+import { API_BASE_URL } from './utils/apiConfig'
 
 interface MRItem {
   mr_id: number
@@ -63,8 +64,6 @@ interface Reviewer {
   score: number
   reason: string
 }
-
-const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'
 
 function App() {
   const [mrs, setMrs] = useState<MRItem[]>([])

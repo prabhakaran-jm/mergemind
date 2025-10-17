@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Target, AlertTriangle, Clock, Star, Zap } from 'lucide-react'
 import axios from 'axios'
+import { API_BASE_URL } from '../utils/apiConfig'
 
 interface AIRecommendation {
   type: string
@@ -17,8 +18,6 @@ interface AIRecommendationsData {
   high_priority_count: number
   timestamp: string
 }
-
-const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'
 
 interface AIRecommendationsCardProps {
   mrId: number

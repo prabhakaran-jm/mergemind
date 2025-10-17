@@ -230,20 +230,20 @@ async def get_mr_stats(
         
         sql = """
         SELECT 
-          mr_id,
+          id as mr_id,
           project_id,
           title,
           author_id,
           created_at,
           state,
-          additions,
-          deletions,
-          last_pipeline_status,
-          last_pipeline_age_min,
-          notes_count_24h,
-          approvals_left
-        FROM `mergemind.mr_activity_view`
-        WHERE mr_id = @mr_id
+          0 as additions,
+          0 as deletions,
+          'unknown' as last_pipeline_status,
+          0 as last_pipeline_age_min,
+          0 as notes_count_24h,
+          0 as approvals_left
+        FROM `mergemind_raw.merge_requests`
+        WHERE id = @mr_id
         LIMIT 1
         """
         

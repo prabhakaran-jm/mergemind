@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Brain, TrendingUp, Target, AlertTriangle, CheckCircle, Clock, BarChart3 } from 'lucide-react'
 import axios from 'axios'
+import { API_BASE_URL } from '../utils/apiConfig'
 
 interface AIInsightsOverview {
   total_mrs_analyzed: number
@@ -26,8 +27,6 @@ interface TeamInsight {
   }
   timestamp: string
 }
-
-const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'
 
 export const AIDashboardCard = () => {
   const [overview, setOverview] = useState<AIInsightsOverview | null>(null)

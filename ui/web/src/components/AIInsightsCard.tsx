@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Brain, TrendingUp, AlertTriangle, CheckCircle, Clock, Star, Target } from 'lucide-react'
 import axios from 'axios'
+import { API_BASE_URL } from '../utils/apiConfig'
 
 interface AIInsight {
   type: string
@@ -38,8 +39,6 @@ interface AIInsightsData {
   data_freshness: string
   confidence_score: number
 }
-
-const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'
 
 interface AIInsightsCardProps {
   mrId: number
