@@ -71,7 +71,7 @@ async def get_mr_context(
         # Get author info (stub for now)
         author = {
             "user_id": context["author_id"],
-            "name": f"User {context['author_id']}"  # TODO: Get actual user name
+            "name": context.get("author_name", f"User {context['author_id']}")  # Use author_name if available, otherwise fallback
         }
         
         # Get last pipeline info

@@ -1,17 +1,52 @@
-# MergeMind
+# MergeMind: An AI-Powered Software Development Intelligence Platform
 
-AI-powered merge request analysis and insights platform for GitLab, providing risk scoring, reviewer suggestions, and automated summaries.
+MergeMind is an advanced analytics and insights platform for GitLab. It leverages a custom Fivetran connector, Google BigQuery, and Google Vertex AI to provide engineering teams with powerful tools to enhance productivity, reduce risk, and streamline the code review process.
 
-## 🚀 Features
+## Fivetran Challenge Submission
 
-- **Event-Driven Data Pipeline**: Real-time GitLab → Fivetran → BigQuery → dbt transformations
-- **AI-Powered Analysis**: Automated diff summarization using Vertex AI Gemini 2.5 Flash
-- **Risk Scoring**: Deterministic risk assessment for merge requests
-- **Reviewer Suggestions**: Intelligent reviewer recommendations based on co-review graph
-- **Real-time Insights**: Live MR analysis with risk badges and blocking detection
-- **Comprehensive API**: RESTful API for all MR analysis features
-- **Modern UI**: React-based dashboard for MR management and analytics
-- **Automated dbt Runs**: Cloud Function triggers dbt transformations on new data
+This project is a submission for the **Fivetran Challenge**. It demonstrates a complete, end-to-end solution that meets and exceeds the challenge requirements:
+
+1.  **Custom Fivetran Connector:** We built a sophisticated, production-ready Fivetran connector for the GitLab API.
+2.  **Google Cloud Integration:** The connector loads data into **Google BigQuery**, which is then used to power our AI application.
+3.  **Industry-Focused AI Application:** We developed an AI-powered intelligence engine using **Google Vertex AI** to solve common problems in the software development lifecycle (SDLC), providing augmented analytics for engineering teams.
+4.  **Modern AI & Data Relevance:** The solution showcases the use of LLMs for multi-step reasoning, automated summarization, and proactive risk and security analysis.
+
+---
+
+## 🚀 Key Features
+
+### 1. Custom Fivetran Connector for GitLab
+
+A robust, production-grade Fivetran connector that extracts critical SDLC data from the GitLab API.
+
+-   **Incremental Syncs:** Efficiently syncs merge requests using `updated_after` timestamps to minimize data transfer and API load.
+-   **Dynamic Project Discovery:** Automatically discovers and syncs GitLab projects based on configurable naming patterns, making the connector highly scalable and low-maintenance.
+-   **Performance Optimized:** Utilizes batching techniques (e.g., for fetching users) to avoid the N+1 problem and improve sync performance.
+-   **Automated dbt Integration:** Triggers a dbt run upon successful data synchronization, enabling a fully automated, end-to-end data pipeline from extraction to transformation.
+
+### 2. AI-Powered Intelligence Engine
+
+At the core of MergeMind is a sophisticated AI engine built on Google Vertex AI that provides deep insights into every merge request.
+
+-   **AI Reviewer Suggester:** A smart recommendation system that suggests the best possible reviewers for a merge request.
+    -   **Multi-Step AI Reasoning:** Uses a chain of LLM prompts to first analyze the required expertise, then analyze reviewer workload, and finally synthesize the results into a ranked list of suggestions.
+    -   **Holistic Analysis:** Considers not just technical expertise but also reviewer workload, availability, and fairness to provide practical and balanced recommendations.
+
+-   **AI Risk Assessor:** A comprehensive risk analysis tool that provides both a quantitative score and qualitative feedback on every code change.
+    -   **Multi-Vector Analysis:** Decomposes "risk" into three key areas—**Code Patterns**, **Security**, and **Complexity**—and uses a dedicated LLM prompt to analyze each one.
+    -   **Proactive Security Scanning:** The security analysis prompt specifically instructs the LLM to look for common vulnerabilities like SQL Injection, XSS, and sensitive data exposure, acting as an automated security audit.
+    -   **Tunable Weighted Scoring:** Combines the scores from the three vectors into a single, weighted risk score, allowing the model to be tuned to organizational priorities.
+
+-   **AI Diff Summarizer:** Automatically generates clear, concise summaries of merge requests.
+    -   **Intelligent Caching:** Features a smart caching mechanism that uses the commit SHA as part of the cache key, ensuring summaries are only regenerated when the code actually changes, saving time and cost.
+
+### 3. Modern, Scalable Architecture
+
+-   **Data Pipeline:** Fivetran -> Google BigQuery -> dbt
+-   **Backend:** FastAPI (Python)
+-   **AI Services:** Google Vertex AI
+-   **Frontend:** React
+-   **Infrastructure:** Deployed on Google Cloud Run, managed with Terraform.
 
 ## 📋 Table of Contents
 

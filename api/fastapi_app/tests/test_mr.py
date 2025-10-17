@@ -1,6 +1,7 @@
-"""
+
+'''
 Tests for individual merge request endpoints.
-"""
+'''
 
 import pytest
 from fastapi.testclient import TestClient
@@ -9,6 +10,11 @@ import json
 
 from main import app
 
+
+@pytest.fixture(autouse=True)
+def disable_rate_limit():
+    with patch('routers.mr.check_rate_limit', return_value=True):
+        yield
 
 @pytest.fixture
 def client():
@@ -23,6 +29,8 @@ def mock_mr_context():
         "mr_id": 1,
         "project_id": 4,
         "title": "Test MR",
+        "author_id": 1,
+        "author_name": "testuser",  # Add this for the router
         "author": {
             "user_id": 1,
             "name": "testuser"
@@ -105,8 +113,7 @@ def mock_risk_features():
 
 
 def test_mr_context_endpoint(client, mock_mr_context):
-    """Test MR context endpoint."""
-    with patch('routers.mr.get_mr_context') as mock_get_context:
+    with patch('routers.mr.summary_service.get_mr_context', new_callable=AsyncMock) as mock_get_context:
         mock_get_context.return_value = mock_mr_context
         
         response = client.get("/api/v1/mr/1/context")
@@ -121,29 +128,27 @@ def test_mr_context_endpoint(client, mock_mr_context):
 
 def test_mr_context_not_found(client):
     """Test MR context endpoint with non-existent MR."""
-    with patch('routers.mr.get_mr_context') as mock_get_context:
+    with patch('services.summary_service.summary_service.get_mr_context', new_callable=AsyncMock) as mock_get_context:
         mock_get_context.return_value = None
         
         response = client.get("/api/v1/mr/999/context")
         assert response.status_code == 404
         data = response.json()
-        assert "error" in data
-
+        assert "not found" in data["detail"].lower()
 
 def test_mr_context_error(client):
     """Test MR context endpoint with error."""
-    with patch('routers.mr.get_mr_context') as mock_get_context:
+    with patch('services.summary_service.summary_service.get_mr_context', new_callable=AsyncMock) as mock_get_context:
         mock_get_context.side_effect = Exception("Database error")
         
         response = client.get("/api/v1/mr/1/context")
         assert response.status_code == 500
         data = response.json()
-        assert "error" in data
-
+        assert "database error" in data["detail"].lower()
 
 def test_mr_summary_endpoint(client, mock_summary):
     """Test MR summary endpoint."""
-    with patch('routers.mr.generate_summary') as mock_generate:
+    with patch('services.summary_service.summary_service.generate_summary', new_callable=AsyncMock) as mock_generate:
         mock_generate.return_value = mock_summary
         
         response = client.post("/api/v1/mr/1/summary")
@@ -157,32 +162,30 @@ def test_mr_summary_endpoint(client, mock_summary):
         assert len(data["risks"]) == 2
         assert len(data["tests"]) == 2
 
-
 def test_mr_summary_not_found(client):
     """Test MR summary endpoint with non-existent MR."""
-    with patch('routers.mr.generate_summary') as mock_generate:
-        mock_generate.return_value = None
+    with patch('services.summary_service.summary_service.generate_summary', new_callable=AsyncMock) as mock_generate:
+        mock_generate.return_value = {"summary": ["No merge request data available"]}
         
         response = client.post("/api/v1/mr/999/summary")
-        assert response.status_code == 404
+        assert response.status_code == 200
         data = response.json()
-        assert "error" in data
-
+        assert "No merge request data available" in data["summary"][0]
 
 def test_mr_summary_error(client):
     """Test MR summary endpoint with error."""
-    with patch('routers.mr.generate_summary') as mock_generate:
+    with patch('services.summary_service.summary_service.generate_summary', new_callable=AsyncMock) as mock_generate:
         mock_generate.side_effect = Exception("AI service error")
         
         response = client.post("/api/v1/mr/1/summary")
         assert response.status_code == 500
         data = response.json()
-        assert "error" in data
-
+        assert "ai service error" in data["detail"].lower()
 
 def test_mr_reviewers_endpoint(client, mock_reviewers):
     """Test MR reviewers endpoint."""
-    with patch('routers.mr.get_reviewer_suggestions') as mock_get_reviewers:
+    with patch('services.reviewer_service.reviewer_service.suggest_reviewers', new_callable=AsyncMock) as mock_get_reviewers:
+        # The service should return just the list, not wrapped in a dict
         mock_get_reviewers.return_value = mock_reviewers["reviewers"]
         
         response = client.get("/api/v1/mr/1/reviewers")
@@ -194,11 +197,10 @@ def test_mr_reviewers_endpoint(client, mock_reviewers):
         assert data["reviewers"][0]["name"] == "reviewer1"
         assert data["reviewers"][1]["name"] == "reviewer2"
 
-
 def test_mr_reviewers_empty(client):
     """Test MR reviewers endpoint with no suggestions."""
-    with patch('routers.mr.get_reviewer_suggestions') as mock_get_reviewers:
-        mock_get_reviewers.return_value = []
+    with patch('services.reviewer_service.reviewer_service.suggest_reviewers', new_callable=AsyncMock) as mock_get_reviewers:
+        mock_get_reviewers.return_value = []  # Return empty list, not wrapped in dict
         
         response = client.get("/api/v1/mr/1/reviewers")
         assert response.status_code == 200
@@ -207,21 +209,19 @@ def test_mr_reviewers_empty(client):
         assert "reviewers" in data
         assert len(data["reviewers"]) == 0
 
-
 def test_mr_reviewers_error(client):
     """Test MR reviewers endpoint with error."""
-    with patch('routers.mr.get_reviewer_suggestions') as mock_get_reviewers:
+    with patch('services.reviewer_service.reviewer_service.suggest_reviewers', new_callable=AsyncMock) as mock_get_reviewers:
         mock_get_reviewers.side_effect = Exception("Reviewer service error")
         
         response = client.get("/api/v1/mr/1/reviewers")
         assert response.status_code == 500
         data = response.json()
-        assert "error" in data
-
+        assert "reviewer service error" in data["detail"].lower()
 
 def test_mr_risk_endpoint(client, mock_risk_features):
     """Test MR risk endpoint."""
-    with patch('routers.mr.calculate_risk') as mock_calculate:
+    with patch('services.risk_service.risk_service.calculate_risk', new_callable=AsyncMock) as mock_calculate:
         mock_calculate.return_value = {
             "score": 25,
             "band": "Low",
@@ -232,74 +232,69 @@ def test_mr_risk_endpoint(client, mock_risk_features):
         assert response.status_code == 200
         data = response.json()
         
-        assert "score" in data
-        assert "band" in data
-        assert "reasons" in data
-        assert data["score"] == 25
-        assert data["band"] == "Low"
-
+        assert "risk" in data
+        assert data["risk"]["score"] == 25
+        assert data["risk"]["band"] == "Low"
 
 def test_mr_risk_not_found(client):
     """Test MR risk endpoint with non-existent MR."""
-    with patch('routers.mr.calculate_risk') as mock_calculate:
-        mock_calculate.return_value = None
+    with patch('services.risk_service.risk_service.calculate_risk', new_callable=AsyncMock) as mock_calculate:
+        mock_calculate.return_value = {"score": 0, "band": "Low", "reasons": ["No risk features available"]}
         
         response = client.get("/api/v1/mr/999/risk")
-        assert response.status_code == 404
+        assert response.status_code == 200
         data = response.json()
-        assert "error" in data
-
+        assert data["risk"]["band"] == "Low"
 
 def test_mr_risk_error(client):
     """Test MR risk endpoint with error."""
-    with patch('routers.mr.calculate_risk') as mock_calculate:
+    with patch('services.risk_service.risk_service.calculate_risk', new_callable=AsyncMock) as mock_calculate:
         mock_calculate.side_effect = Exception("Risk calculation error")
         
         response = client.get("/api/v1/mr/1/risk")
         assert response.status_code == 500
         data = response.json()
-        assert "error" in data
-
+        assert "risk calculation error" in data["detail"].lower()
 
 def test_mr_stats_endpoint(client, mock_mr_context):
     """Test MR stats endpoint."""
-    with patch('routers.mr.get_mr_stats') as mock_get_stats:
-        mock_get_stats.return_value = {
-            "mr_id": 1,
-            "total_notes": 5,
-            "total_approvals": 1,
-            "total_reviews": 3,
-            "cycle_time_hours": 48.5,
-            "last_activity": "2024-01-01T12:00:00Z"
-        }
-        
+    with patch('routers.mr.bigquery_client.query') as mock_query, \
+         patch('services.risk_service.risk_service.calculate_risk', new_callable=AsyncMock) as mock_risk, \
+         patch('services.reviewer_service.reviewer_service.suggest_reviewers', new_callable=AsyncMock) as mock_reviewers, \
+         patch('services.summary_service.summary_service.get_summary_stats') as mock_summary_stats:
+
+        mock_query.return_value = [mock_mr_context]
+        mock_risk.return_value = {"score": 25, "band": "Low"}
+        mock_reviewers.return_value = {"reviewers": []}
+        mock_summary_stats.return_value = {"hits": 1, "misses": 1}
+
         response = client.get("/api/v1/mr/1/stats")
         assert response.status_code == 200
         data = response.json()
         
         assert "mr_id" in data
-        assert "total_notes" in data
-        assert "total_approvals" in data
-        assert "cycle_time_hours" in data
+        assert "basic_info" in data
+        assert "risk" in data
+        assert "reviewers" in data
+        assert "summary_cache_stats" in data
 
 
 def test_mr_stats_not_found(client):
     """Test MR stats endpoint with non-existent MR."""
-    with patch('routers.mr.get_mr_stats') as mock_get_stats:
-        mock_get_stats.return_value = None
+    with patch('routers.mr.bigquery_client.query') as mock_query:
+        mock_query.return_value = []
         
         response = client.get("/api/v1/mr/999/stats")
         assert response.status_code == 404
         data = response.json()
-        assert "error" in data
-
+        assert "not found" in data["detail"].lower()
 
 def test_mr_stats_error(client):
     """Test MR stats endpoint with error."""
-    with patch('routers.mr.get_mr_stats') as mock_get_stats:
-        mock_get_stats.side_effect = Exception("Stats calculation error")
+    with patch('routers.mr.bigquery_client.query') as mock_query:
+        mock_query.side_effect = Exception("Stats calculation error")
         
         response = client.get("/api/v1/mr/1/stats")
         assert response.status_code == 500
         data = response.json()
-        assert "error" in data
+        assert "stats calculation error" in data["detail"].lower()

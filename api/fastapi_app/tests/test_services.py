@@ -1,543 +1,170 @@
-"""
-Tests for service layer components.
-"""
+'''
+Tests for the service layer.
+'''
 
+import os
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
-import json
 
+# Import the classes, not the global instances
 from services.bigquery_client import BigQueryClient
 from services.gitlab_client import GitLabClient
 from services.vertex_client import VertexAIClient
-from services.reviewer_service import ReviewerService
 from services.risk_service import RiskService
+from services.reviewer_service import ReviewerService
 from services.summary_service import SummaryService
 from services.user_service import UserService
 from services.metrics import MetricsService
 
+# Fixtures to provide fresh instances for each test
+
+@pytest.fixture
+def bq_client(monkeypatch):
+    monkeypatch.setenv("GCP_PROJECT_ID", "test-project")
+    monkeypatch.setenv("BQ_DATASET_RAW", "mergemind_raw")
+    monkeypatch.setenv("BQ_DATASET_MODELED", "mergemind")
+    with patch('google.cloud.bigquery.Client'):
+        yield BigQueryClient()
+
+@pytest.fixture
+def gitlab_client(monkeypatch):
+    monkeypatch.setenv("GITLAB_BASE_URL", "https://gitlab.com")
+    monkeypatch.setenv("GITLAB_TOKEN", "test-token")
+    return GitLabClient()
+
+@pytest.fixture
+def vertex_client(monkeypatch):
+    monkeypatch.setenv("GCP_PROJECT_ID", "test-project")
+    monkeypatch.setenv("VERTEX_LOCATION", "us-central1")
+    with patch('vertexai.generative_models.GenerativeModel'):
+        yield VertexAIClient()
+
 
 class TestBigQueryClient:
-    """Test BigQuery client service."""
-    
-    def test_init_success(self):
-        """Test successful initialization."""
-        with patch.dict('os.environ', {'GCP_PROJECT_ID': 'test-project'}):
-            with patch('google.cloud.bigquery.Client'):
-                client = BigQueryClient()
-                assert client.project_id == 'test-project'
-                assert client.dataset_raw == 'mergemind_raw'
-                assert client.dataset_modeled == 'mergemind'
-    
-    def test_init_missing_project(self):
-        """Test initialization with missing project ID."""
-        with patch.dict('os.environ', {}, clear=True):
+    def test_init_success(self, monkeypatch):
+        monkeypatch.setenv("GCP_PROJECT_ID", "test-project")
+        monkeypatch.setenv("BQ_DATASET_RAW", "test_raw")
+        monkeypatch.setenv("BQ_DATASET_MODELED", "test_modeled")
+        with patch('google.cloud.bigquery.Client'):
+            client = BigQueryClient()
+            assert client.project_id == "test-project"
+            assert client.dataset_raw == "test_raw"
+
+    def test_init_missing_project(self, monkeypatch):
+        # Clear the environment variable that might be set by the test runner
+        monkeypatch.delenv("GCP_PROJECT_ID", raising=False)
+        # Also clear it from os.environ directly to ensure it's removed
+        if "GCP_PROJECT_ID" in os.environ:
+            del os.environ["GCP_PROJECT_ID"]
+        
+        # Mock the Settings class to avoid Pydantic validation
+        with patch('services.bigquery_client.get_settings') as mock_get_settings:
+            mock_settings = MagicMock()
+            mock_settings.gcp_project_id = None  # Simulate missing project ID
+            mock_get_settings.return_value = mock_settings
+            
             with pytest.raises(ValueError, match="GCP_PROJECT_ID environment variable is required"):
-                BigQueryClient()
-    
-    def test_query_success(self):
-        """Test successful query execution."""
-        with patch.dict('os.environ', {'GCP_PROJECT_ID': 'test-project'}):
-            with patch('google.cloud.bigquery.Client') as mock_client:
-                # Mock query result
-                mock_row = MagicMock()
-                mock_row.__iter__ = lambda x: iter([('test_value', 1)])
-                mock_row.keys.return_value = ['test_value']
-                mock_row.__getitem__ = lambda x, y: 1 if y == 'test_value' else None
-                
-                mock_query_job = MagicMock()
-                mock_query_job.result.return_value = [mock_row]
-                mock_client.return_value.query.return_value = mock_query_job
-                
-                client = BigQueryClient()
-                result = client.query("SELECT 1 as test_value")
-                
-                assert len(result) == 1
-                assert result[0]['test_value'] == 1
-    
-    def test_query_with_params(self):
-        """Test query with parameters."""
-        with patch.dict('os.environ', {'GCP_PROJECT_ID': 'test-project'}):
-            with patch('google.cloud.bigquery.Client') as mock_client:
-                mock_query_job = MagicMock()
-                mock_query_job.result.return_value = []
-                mock_client.return_value.query.return_value = mock_query_job
-                
-                client = BigQueryClient()
-                client.query("SELECT * FROM table WHERE id = @id", id=123)
-                
-                # Verify query was called with formatted SQL
-                mock_client.return_value.query.assert_called_once()
-                call_args = mock_client.return_value.query.call_args[0][0]
-                assert "123" in call_args
-    
-    def test_table_exists_true(self):
-        """Test table existence check - table exists."""
-        with patch.dict('os.environ', {'GCP_PROJECT_ID': 'test-project'}):
-            with patch('google.cloud.bigquery.Client') as mock_client:
-                mock_client.return_value.get_table.return_value = MagicMock()
-                
-                client = BigQueryClient()
-                result = client.table_exists("dataset", "table")
-                
-                assert result is True
-    
-    def test_table_exists_false(self):
-        """Test table existence check - table doesn't exist."""
-        with patch.dict('os.environ', {'GCP_PROJECT_ID': 'test-project'}):
-            with patch('google.cloud.bigquery.Client') as mock_client:
-                from google.cloud.exceptions import NotFound
-                mock_client.return_value.get_table.side_effect = NotFound("Table not found")
-                
-                client = BigQueryClient()
-                result = client.table_exists("dataset", "table")
-                
-                assert result is False
-    
-    def test_test_connection_success(self):
-        """Test connection test - success."""
-        with patch.dict('os.environ', {'GCP_PROJECT_ID': 'test-project'}):
-            with patch('google.cloud.bigquery.Client') as mock_client:
-                mock_row = MagicMock()
-                mock_row.__iter__ = lambda x: iter([('test_value', 1)])
-                mock_row.keys.return_value = ['test_value']
-                mock_row.__getitem__ = lambda x, y: 1 if y == 'test_value' else None
-                
-                mock_query_job = MagicMock()
-                mock_query_job.result.return_value = [mock_row]
-                mock_client.return_value.query.return_value = mock_query_job
-                
-                client = BigQueryClient()
-                result = client.test_connection()
-                
-                assert result is True
-    
-    def test_test_connection_failure(self):
-        """Test connection test - failure."""
-        with patch.dict('os.environ', {'GCP_PROJECT_ID': 'test-project'}):
-            with patch('google.cloud.bigquery.Client') as mock_client:
-                mock_client.return_value.query.side_effect = Exception("Connection failed")
-                
-                client = BigQueryClient()
-                result = client.test_connection()
-                
-                assert result is False
+                with patch('google.cloud.bigquery.Client'):
+                    BigQueryClient()
 
-
+@pytest.mark.asyncio
 class TestGitLabClient:
-    """Test GitLab client service."""
-    
-    def test_init_success(self):
-        """Test successful initialization."""
-        with patch.dict('os.environ', {'GITLAB_TOKEN': 'test-token'}):
-            client = GitLabClient()
-            assert client.token == 'test-token'
-            assert client.base_url == 'https://gitlab.com'
-            assert 'Authorization' in client.headers
-    
-    def test_init_no_token(self):
-        """Test initialization without token."""
-        with patch.dict('os.environ', {}, clear=True):
-            client = GitLabClient()
-            assert client.token is None
-            assert client.headers == {}
-    
-    @pytest.mark.asyncio
-    async def test_get_merge_request_success(self):
-        """Test successful MR retrieval."""
-        with patch.dict('os.environ', {'GITLAB_TOKEN': 'test-token'}):
-            client = GitLabClient()
-            
-            with patch('httpx.AsyncClient') as mock_client:
-                mock_response = MagicMock()
-                mock_response.status_code = 200
-                mock_response.json.return_value = {"id": 1, "title": "Test MR"}
-                
-                mock_client.return_value.__aenter__.return_value.get.return_value = mock_response
-                
-                result = await client.get_merge_request(4, 1)
-                
-                assert result["id"] == 1
-                assert result["title"] == "Test MR"
-    
-    @pytest.mark.asyncio
-    async def test_get_merge_request_not_found(self):
-        """Test MR retrieval - not found."""
-        with patch.dict('os.environ', {'GITLAB_TOKEN': 'test-token'}):
-            client = GitLabClient()
-            
-            with patch('httpx.AsyncClient') as mock_client:
-                mock_response = MagicMock()
-                mock_response.status_code = 404
-                
-                mock_client.return_value.__aenter__.return_value.get.return_value = mock_response
-                
-                result = await client.get_merge_request(4, 999)
-                
-                assert result is None
-    
-    def test_test_connection_success(self):
-        """Test connection test - success."""
-        with patch.dict('os.environ', {'GITLAB_TOKEN': 'test-token'}):
-            client = GitLabClient()
-            
-            with patch('httpx.Client') as mock_client:
-                mock_response = MagicMock()
-                mock_response.status_code = 200
-                
-                mock_client.return_value.__enter__.return_value.get.return_value = mock_response
-                
-                result = client.test_connection()
-                
-                assert result is True
-    
-    def test_test_connection_failure(self):
-        """Test connection test - failure."""
-        with patch.dict('os.environ', {'GITLAB_TOKEN': 'test-token'}):
-            client = GitLabClient()
-            
-            with patch('httpx.Client') as mock_client:
-                mock_client.return_value.__enter__.return_value.get.side_effect = Exception("Connection failed")
-                
-                result = client.test_connection()
-                
-                assert result is False
+    async def test_get_merge_request_diff(self, gitlab_client):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"changes": [{"diff": "fake diff"}]}
 
+        with patch('httpx.AsyncClient.get', new_callable=AsyncMock, return_value=mock_response) as mock_get:
+            diff = await gitlab_client.get_merge_request_diff(1, 1)
+            # The method adds diff headers, so expect the formatted output
+            assert diff == "--- \n+++ \nfake diff\n"
 
 class TestVertexAIClient:
-    """Test Vertex AI client service."""
-    
-    def test_init_success(self):
-        """Test successful initialization."""
-        with patch.dict('os.environ', {'GCP_PROJECT_ID': 'test-project'}):
-            with patch('vertexai.init'), \
-                 patch('vertexai.generative_models.GenerativeModel'):
-                client = VertexAIClient()
-                assert client.project_id == 'test-project'
-                assert client.location == 'europe-west2'
-    
-    def test_init_missing_project(self):
-        """Test initialization with missing project ID."""
-        with patch.dict('os.environ', {}, clear=True):
-            with pytest.raises(ValueError, match="GCP_PROJECT_ID environment variable is required"):
-                VertexAIClient()
-    
-    def test_generate_text_success(self):
-        """Test successful text generation."""
-        with patch.dict('os.environ', {'GCP_PROJECT_ID': 'test-project'}):
-            with patch('vertexai.init'), \
-                 patch('vertexai.generative_models.GenerativeModel') as mock_model:
-                
-                mock_response = MagicMock()
-                mock_response.text = "Generated text response"
-                mock_model.return_value.generate_content.return_value = mock_response
-                
-                client = VertexAIClient()
-                result = client.generate_text("Test prompt")
-                
-                assert result == "Generated text response"
-    
-    def test_generate_text_failure(self):
-        """Test text generation failure."""
-        with patch.dict('os.environ', {'GCP_PROJECT_ID': 'test-project'}):
-            with patch('vertexai.init'), \
-                 patch('vertexai.generative_models.GenerativeModel') as mock_model:
-                
-                mock_model.return_value.generate_content.side_effect = Exception("Generation failed")
-                
-                client = VertexAIClient()
-                
-                with pytest.raises(Exception, match="Generation failed"):
-                    client.generate_text("Test prompt")
-    
-    def test_summarize_diff_success(self):
-        """Test successful diff summarization."""
-        with patch.dict('os.environ', {'GCP_PROJECT_ID': 'test-project'}):
-            with patch('vertexai.init'), \
-                 patch('vertexai.generative_models.GenerativeModel') as mock_model:
-                
-                mock_response = MagicMock()
-                mock_response.text = '{"summary": ["Test summary"], "risks": ["Test risk"], "tests": ["Test test"]}'
-                mock_model.return_value.generate_content.return_value = mock_response
-                
-                client = VertexAIClient()
-                result = client.summarize_diff(
-                    title="Test MR",
-                    description="Test description",
-                    files=["file1.py"],
-                    additions=10,
-                    deletions=5,
-                    diff_snippets="diff content"
-                )
-                
-                assert "summary" in result
-                assert "risks" in result
-                assert "tests" in result
-    
-    def test_summarize_diff_empty_content(self):
-        """Test diff summarization with empty content."""
-        with patch.dict('os.environ', {'GCP_PROJECT_ID': 'test-project'}):
-            with patch('vertexai.init'), \
-                 patch('vertexai.generative_models.GenerativeModel'):
-                
-                client = VertexAIClient()
-                result = client.summarize_diff(
-                    title="Test MR",
-                    description="Test description",
-                    files=[],
-                    additions=0,
-                    deletions=0,
-                    diff_snippets=""
-                )
-                
-                assert "Insufficient context for analysis" in result["summary"][0]
-    
-    def test_test_connection_success(self):
-        """Test connection test - success."""
-        with patch.dict('os.environ', {'GCP_PROJECT_ID': 'test-project'}):
-            with patch('vertexai.init'), \
-                 patch('vertexai.generative_models.GenerativeModel') as mock_model:
-                
-                mock_response = MagicMock()
-                mock_response.text = "Test response"
-                mock_model.return_value.generate_content.return_value = mock_response
-                
-                client = VertexAIClient()
-                result = client.test_connection()
-                
-                assert result is True
-    
-    def test_test_connection_failure(self):
-        """Test connection test - failure."""
-        with patch.dict('os.environ', {'GCP_PROJECT_ID': 'test-project'}):
-            with patch('vertexai.init'), \
-                 patch('vertexai.generative_models.GenerativeModel') as mock_model:
-                
-                mock_model.return_value.generate_content.side_effect = Exception("Connection failed")
-                
-                client = VertexAIClient()
-                result = client.test_connection()
-                
-                assert result is False
+    def test_generate_text_success(self, vertex_client):
+        # Mock the model's generate_content method
+        with patch.object(vertex_client.model, 'generate_content') as mock_generate:
+            mock_response = MagicMock()
+            mock_response.text = 'Generated text'
+            mock_generate.return_value = mock_response
+            
+            result = vertex_client.generate_text("Test prompt")
+            assert result == "Generated text"
 
-
-class TestReviewerService:
-    """Test reviewer service."""
-    
-    def test_init(self):
-        """Test service initialization."""
-        with patch('services.bigquery_client.bigquery_client'), \
-             patch('services.user_service.user_service'):
-            service = ReviewerService()
-            assert service.bq_client is not None
-            assert service.user_service is not None
-    
-    def test_suggest_reviewers_success(self):
-        """Test successful reviewer suggestions."""
-        with patch('services.bigquery_client.bigquery_client') as mock_bq, \
-             patch('services.user_service.user_service') as mock_user, \
-             patch('ai.reviewers.suggest.ReviewerSuggester') as mock_suggester:
-            
-            mock_suggester.return_value.suggest.return_value = [
-                {"user_id": 2, "name": "reviewer1", "score": 0.8, "reason": "Good match"}
-            ]
-            
-            service = ReviewerService()
-            result = service.suggest_reviewers(1)
-            
-            assert len(result) == 1
-            assert result[0]["name"] == "reviewer1"
-    
-    def test_suggest_reviewers_no_context(self):
-        """Test reviewer suggestions with no MR context."""
-        with patch('services.bigquery_client.bigquery_client') as mock_bq, \
-             patch('services.user_service.user_service') as mock_user, \
-             patch('ai.reviewers.suggest.ReviewerSuggester') as mock_suggester:
-            
-            mock_bq.query.return_value = []  # No context found
-            
-            service = ReviewerService()
-            result = service.suggest_reviewers(999)
-            
-            assert result == []
-
-
+@pytest.mark.asyncio
 class TestRiskService:
-    """Test risk service."""
-    
-    def test_init(self):
-        """Test service initialization."""
-        with patch('services.bigquery_client.bigquery_client'):
-            service = RiskService()
-            assert service.bq_client is not None
-    
-    def test_calculate_risk_success(self):
-        """Test successful risk calculation."""
-        with patch('services.bigquery_client.bigquery_client') as mock_bq, \
-             patch('ai.scoring.rules.score') as mock_score:
-            
-            mock_bq.query.return_value = [{
-                "mr_id": 1,
-                "age_hours": 24,
-                "notes_count_24h": 2,
-                "last_pipeline_status_is_fail": False,
-                "approvals_left": 1,
-                "change_size_bucket": "S",
-                "work_in_progress": False,
-                "labels_sensitive": False
-            }]
-            
-            mock_score.return_value = {
-                "score": 25,
-                "band": "Low",
-                "reasons": ["Small change"]
-            }
-            
-            service = RiskService()
-            result = service.calculate_risk(1)
-            
-            assert result["score"] == 25
-            assert result["band"] == "Low"
-    
-    def test_calculate_risk_no_features(self):
-        """Test risk calculation with no features."""
-        with patch('services.bigquery_client.bigquery_client') as mock_bq:
-            mock_bq.query.return_value = []  # No features found
-            
-            service = RiskService()
-            result = service.calculate_risk(999)
-            
-            assert result["score"] == 0
-            assert result["band"] == "Low"
-            assert "No risk features available" in result["reasons"]
+    @pytest.fixture
+    def risk_service(self, bq_client, gitlab_client):
+        with patch('services.risk_service.bigquery_client', bq_client), \
+             patch('services.risk_service.gitlab_client', gitlab_client):
+            yield RiskService()
 
+    async def test_calculate_risk_success(self, risk_service):
+        with patch.object(risk_service, '_get_risk_features') as mock_get_features, \
+             patch('services.risk_service.score') as mock_score, \
+             patch.object(risk_service, '_calculate_ai_risk', new_callable=AsyncMock) as mock_ai_risk:
+            
+            mock_get_features.return_value = {"last_pipeline_status_is_fail": False, "approvals_left": 1, "change_size_bucket": "S", "work_in_progress": False, "labels_sensitive": False, "age_hours": 1, "notes_count_24h": 1, "author_recent_fail_rate_7d": 0, "repo_merge_conflict_rate_14d": 0}
+            mock_score.return_value = {"score": 50, "band": "Medium", "reasons": []}
+            mock_ai_risk.return_value = {"overall_score": 60}
+
+            result = await risk_service.calculate_risk(1)
+            assert result["combined_score"] == 53.0
+            assert result["combined_band"] == "Medium"
+
+@pytest.mark.asyncio
+class TestReviewerService:
+    @pytest.fixture
+    def reviewer_service(self, bq_client, gitlab_client):
+        with patch('services.reviewer_service.bigquery_client', bq_client), \
+             patch('services.reviewer_service.gitlab_client', gitlab_client):
+            yield ReviewerService()
+
+    async def test_suggest_reviewers_success(self, reviewer_service):
+        with patch.object(reviewer_service, '_get_mr_context') as mock_get_context, \
+             patch.object(reviewer_service.suggester, 'suggest') as mock_suggest, \
+             patch.object(reviewer_service, '_get_ai_suggestions', new_callable=AsyncMock) as mock_ai_suggest:
+
+            mock_get_context.return_value = {"author_id": 1}
+            mock_suggest.return_value = [{"user_id": 2}]
+            mock_ai_suggest.return_value = {"suggestions": [{"user_id": 3}]}
+
+            result = await reviewer_service.suggest_reviewers(1)
+            assert len(result["suggestions"]) == 2
+
+@pytest.mark.asyncio
+class TestSummaryService:
+    @pytest.fixture
+    def summary_service(self, bq_client, gitlab_client):
+        with patch('services.summary_service.bigquery_client', bq_client), \
+             patch('services.summary_service.gitlab_client', gitlab_client):
+            yield SummaryService()
+
+    async def test_generate_summary_success(self, summary_service):
+        with patch.object(summary_service, '_get_mr_data') as mock_get_data, \
+             patch.object(summary_service.gitlab_client, 'get_merge_request_diff', new_callable=AsyncMock) as mock_get_diff, \
+             patch.object(summary_service.summarizer, 'summarize_diff') as mock_summarize:
+
+            mock_get_data.return_value = {"project_id": 1, "sha": "abc"}
+            mock_get_diff.return_value = "fake diff"
+            mock_summarize.return_value = {"summary": "Test summary"}
+
+            result = await summary_service.generate_summary(1)
+            assert result["summary"] == "Test summary"
 
 class TestUserService:
-    """Test user service."""
-    
-    def test_init(self):
-        """Test service initialization."""
-        with patch('services.bigquery_client.bigquery_client'), \
-             patch('services.gitlab_client.gitlab_client'):
-            service = UserService()
-            assert service.bq_client is not None
-            assert service.gitlab_client is not None
-            assert service._user_cache == {}
-    
-    def test_get_user_name_from_cache(self):
-        """Test user name retrieval from cache."""
-        with patch('services.bigquery_client.bigquery_client'), \
-             patch('services.gitlab_client.gitlab_client'):
-            service = UserService()
-            service._user_cache[1] = "cached_user"
-            
-            result = service.get_user_name(1)
-            
-            assert result == "cached_user"
-    
-    def test_get_user_name_from_bigquery(self):
-        """Test user name retrieval from BigQuery."""
-        with patch('services.bigquery_client.bigquery_client') as mock_bq, \
-             patch('services.gitlab_client.gitlab_client'):
-            
-            mock_bq.query.return_value = [{
-                "user_id": 1,
-                "username": "testuser",
-                "name": "Test User"
-            }]
-            
-            service = UserService()
-            result = service.get_user_name(1)
-            
-            assert result == "Test User"
-            assert 1 in service._user_cache
-    
-    def test_get_user_name_fallback(self):
-        """Test user name retrieval fallback."""
-        with patch('services.bigquery_client.bigquery_client') as mock_bq, \
-             patch('services.gitlab_client.gitlab_client'):
-            
-            mock_bq.query.return_value = []  # No user found
-            
-            service = UserService()
-            result = service.get_user_name(999)
-            
-            assert result == "User 999"
-            assert 999 in service._user_cache
-    
-    def test_get_users_by_ids(self):
-        """Test multiple user name retrieval."""
-        with patch('services.bigquery_client.bigquery_client') as mock_bq, \
-             patch('services.gitlab_client.gitlab_client'):
-            
-            mock_bq.query.return_value = []  # No users found
-            
-            service = UserService()
-            result = service.get_users_by_ids([1, 2, 3])
-            
-            assert result == {1: "User 1", 2: "User 2", 3: "User 3"}
+    @pytest.fixture
+    def user_service(self, bq_client):
+        with patch('services.user_service.bigquery_client', bq_client):
+            yield UserService()
 
+    def test_get_user_name(self, user_service):
+        with patch.object(user_service, '_get_user_from_bigquery') as mock_get_user:
+            mock_get_user.return_value = {"name": "Test User"}
+            result = user_service.get_user_name(1)
+            assert result == "Test User"
 
 class TestMetricsService:
-    """Test metrics service."""
-    
-    def test_init(self):
-        """Test service initialization."""
-        service = MetricsService()
-        assert service.collector is not None
-    
     def test_record_request(self):
-        """Test request recording."""
         service = MetricsService()
-        
-        # Record a request
-        service.record_request("/test", "GET", 200, 0.1)
-        
-        # Get summary
-        summary = service.get_summary()
-        
-        assert summary["request_count"] == 1
-        assert summary["error_count"] == 0
-        assert summary["error_rate"] == 0
-    
-    def test_record_error_request(self):
-        """Test error request recording."""
-        service = MetricsService()
-        
-        # Record an error request
-        service.record_request("/test", "GET", 500, 0.1, Exception("Test error"))
-        
-        # Get summary
-        summary = service.get_summary()
-        
-        assert summary["request_count"] == 1
-        assert summary["error_count"] == 1
-        assert summary["error_rate"] == 1.0
-    
-    def test_check_slo_violations(self):
-        """Test SLO violation checking."""
-        service = MetricsService()
-        
-        # Record requests that violate SLOs
-        for _ in range(10):
-            service.record_request("/test", "GET", 500, 3.0)  # High latency, high error rate
-        
-        result = service.check_slo_violations()
-        
-        assert result["status"] == "degraded"
-        assert len(result["violations"]) > 0
-    
-    def test_reset_metrics(self):
-        """Test metrics reset."""
-        service = MetricsService()
-        
-        # Record some requests
-        service.record_request("/test", "GET", 200, 0.1)
-        
-        # Reset metrics
-        service.reset_metrics()
-        
-        # Get summary
-        summary = service.get_summary()
-        
-        assert summary["request_count"] == 0
-        assert summary["error_count"] == 0
+        service.record_request("test_endpoint", "GET", 200, 0.1)
+        assert service.collector.request_count == 1

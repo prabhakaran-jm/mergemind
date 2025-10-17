@@ -8,6 +8,7 @@ from datetime import datetime
 
 from services.bigquery_client import bigquery_client
 from services.gitlab_client import gitlab_client
+from services.user_service import user_service
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
@@ -24,6 +25,7 @@ class SummaryService:
         self.bq_client = bigquery_client
         self.gitlab_client = gitlab_client
         self.summarizer = diff_summarizer
+        self.user_service = user_service
     
     async def generate_summary(self, mr_id: int) -> Dict[str, Any]:
         """
@@ -170,12 +172,16 @@ class SummaryService:
                 mr_id=mr_id
             )
             
+            # Get author name
+            author_name = self.user_service.get_user_name(mr_data["author_id"])
+            
             # Combine data
             context = {
                 "mr_id": mr_id,
                 "project_id": mr_data["project_id"],
                 "title": mr_data["title"],
                 "author_id": mr_data["author_id"],
+                "author_name": author_name,
                 "state": mr_data["state"],
                 "created_at": mr_data["created_at"],
                 "additions": mr_data["additions"],
