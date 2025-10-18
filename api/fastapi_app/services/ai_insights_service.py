@@ -235,12 +235,8 @@ class AIInsightsService:
         """Generate actionable recommendations based on MR data and AI insights."""
         try:
             recommendations = []
-            
-            # Extract AI-based recommendations first
-            ai_recommendations = self._extract_ai_recommendations(ai_insights)
-            recommendations.extend(ai_recommendations)
-            
-            # Risk-based recommendations
+
+            # Rule-based recommendations
             if mr_data.get("risk_label") == "High":
                 recommendations.append({
                     "type": "risk_mitigation",
@@ -253,8 +249,7 @@ class AIInsightsService:
                         "Consider breaking into smaller changes"
                     ]
                 })
-            
-            # Pipeline-based recommendations
+
             if mr_data.get("last_pipeline_status") == "failed":
                 recommendations.append({
                     "type": "pipeline_fix",
@@ -267,10 +262,8 @@ class AIInsightsService:
                         "Verify build configuration"
                     ]
                 })
-            
-            # Age-based recommendations
-            age_hours = mr_data.get("age_hours", 0)
-            if age_hours > 72:  # 3 days
+
+            if mr_data.get("age_hours", 0) > 72:
                 recommendations.append({
                     "type": "stale_mr",
                     "priority": "medium",
@@ -282,10 +275,8 @@ class AIInsightsService:
                         "Consider closing if abandoned"
                     ]
                 })
-            
-            # Size-based recommendations
-            change_size = mr_data.get("change_size_bucket", "")
-            if change_size in ["L", "XL"]:
+
+            if mr_data.get("change_size_bucket", "") in ["L", "XL"]:
                 recommendations.append({
                     "type": "large_change",
                     "priority": "medium",
@@ -297,14 +288,14 @@ class AIInsightsService:
                         "Add detailed documentation"
                     ]
                 })
-            
+
             # AI-enhanced recommendations
-            if ai_insights and not ai_insights.get("error"):
+            if ai_insights and not isinstance(ai_insights, dict) and not any(i.get("type") == "error" for i in ai_insights):
                 ai_recommendations = self._extract_ai_recommendations(ai_insights)
                 recommendations.extend(ai_recommendations)
-            
+
             return recommendations
-            
+
         except Exception as e:
             logger.error(f"Failed to generate recommendations: {e}")
             return []
@@ -314,70 +305,53 @@ class AIInsightsService:
         try:
             project_id = mr_data.get("project_id")
             author_id = mr_data.get("author_id")
-            
-            # Get historical data for trend analysis with fallback defaults
+
             trend_query = f"""
             WITH project_trends AS (
-                SELECT 
+                SELECT
+                    'project' as scope,
                     DATE(created_at) as date,
                     COUNT(*) as mr_count,
                     AVG(cycle_time_hours) as avg_cycle_time,
-                    0.5 as avg_risk_score
+                    AVG(risk_score) as avg_risk_score
                 FROM `{self.project_id}.mergemind.cycle_time_view`
                 WHERE project_id = {project_id}
                 AND DATE(created_at) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
                 GROUP BY DATE(created_at)
-                ORDER BY date DESC
             ),
             author_trends AS (
-                SELECT 
+                SELECT
+                    'author' as scope,
                     DATE(c.created_at) as date,
                     COUNT(*) as mr_count,
                     AVG(c.cycle_time_hours) as avg_cycle_time,
-                    0.5 as avg_risk_score
+                    AVG(c.risk_score) as avg_risk_score
                 FROM `{self.project_id}.mergemind.cycle_time_view` c
                 JOIN `{self.project_id}.mergemind.mr_activity_view` a ON c.mr_id = a.mr_id
                 WHERE a.author_id = {author_id}
                 AND DATE(c.created_at) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
                 GROUP BY DATE(c.created_at)
-                ORDER BY date DESC
-            ),
-            project_fallback AS (
-                SELECT 'project' as scope, ARRAY<STRUCT<date DATE, mr_count INT64, avg_cycle_time FLOAT64, avg_risk_score FLOAT64>>[
-                    STRUCT(CURRENT_DATE() as date, 1 as mr_count, 24.0 as avg_cycle_time, 0.5 as avg_risk_score)
-                ] as trends
-            ),
-            author_fallback AS (
-                SELECT 'author' as scope, ARRAY<STRUCT<date DATE, mr_count INT64, avg_cycle_time FLOAT64, avg_risk_score FLOAT64>>[
-                    STRUCT(CURRENT_DATE() as date, 1 as mr_count, 24.0 as avg_cycle_time, 0.5 as avg_risk_score)
-                ] as trends
             )
             SELECT 'project' as scope, ARRAY_AGG(STRUCT(date, mr_count, avg_cycle_time, avg_risk_score)) as trends FROM project_trends
             UNION ALL
             SELECT 'author' as scope, ARRAY_AGG(STRUCT(date, mr_count, avg_cycle_time, avg_risk_score)) as trends FROM author_trends
-            UNION ALL
-            SELECT scope, trends FROM project_fallback WHERE NOT EXISTS (SELECT 1 FROM project_trends)
-            UNION ALL
-            SELECT scope, trends FROM author_fallback WHERE NOT EXISTS (SELECT 1 FROM author_trends)
             """
-            
+
             query_job = self.bq_client.query(trend_query)
             results = query_job
-            
-            trends = {}
+
+            trends = {
+                "project": {"trends": []},
+                "author": {"trends": []}
+            }
+
             if results:
                 for row in results:
-                    if hasattr(row, 'scope') and hasattr(row, 'trends'):
+                    if row.scope and row.trends:
                         trends[row.scope] = {"trends": row.trends}
-            else:
-                # Return empty trends if no data
-                trends = {
-                    "project": {"trends": []},
-                    "author": {"trends": []}
-                }
-            
+
             return trends
-            
+
         except Exception as e:
             logger.error(f"Failed to generate trend analysis: {e}")
             return {"error": f"Trend analysis failed: {str(e)}"}
@@ -670,133 +644,74 @@ class AIInsightsService:
         recommendations = []
         
         try:
-            # If ai_insights is a list (structured), extract from it
-            if isinstance(ai_insights, list):
-                logger.info(f"Processing {len(ai_insights)} AI insights for recommendations")
-                for insight in ai_insights:
-                    logger.info(f"Processing insight: type={insight.get('type')}, priority={insight.get('priority')}")
-                    if insight.get("type") == "security" and insight.get("priority") == "high":
-                        recommendations.append({
-                            "type": "security_review",
-                            "priority": "high",
-                            "title": "Security Review Required",
-                            "description": "High-priority security concerns identified. Immediate review recommended.",
-                            "actions": [
-                                "Request security team review",
-                                "Conduct security testing",
-                                "Review data handling practices"
-                            ]
-                        })
-                    
-                    elif insight.get("type") in ["technical_debt", "maintainability"] and insight.get("priority") in ["high", "medium"]:
-                        recommendations.append({
-                            "type": "technical_debt",
-                            "priority": insight.get("priority", "medium"),
-                            "title": "Address Technical Debt",
-                            "description": insight.get("description", "Technical debt identified that should be addressed."),
-                            "actions": [
-                                "Refactor affected code",
-                                "Add comprehensive tests",
-                                "Update documentation"
-                            ]
-                        })
-                    
-                    elif insight.get("type") == "performance" and insight.get("priority") in ["high", "medium"]:
-                        recommendations.append({
-                            "type": "performance_optimization",
-                            "priority": insight.get("priority", "medium"),
-                            "title": "Performance Optimization",
-                            "description": "Performance concerns identified. Consider optimization.",
-                            "actions": [
-                                "Profile the code for bottlenecks",
-                                "Optimize algorithms if needed",
-                                "Add performance monitoring"
-                            ]
-                        })
-                    
-                    elif insight.get("type") in ["architecture", "patterns"] and insight.get("priority") in ["high", "medium"]:
-                        recommendations.append({
-                            "type": "architecture_review",
-                            "priority": insight.get("priority", "medium"),
-                            "title": "Architecture Review",
-                            "description": "Architecture concerns identified. Consider architectural review.",
-                            "actions": [
-                                "Review architectural decisions",
-                                "Consider design patterns",
-                                "Validate scalability approach"
-                            ]
-                        })
-            
-            # If ai_insights is a dict with raw_response (fallback), generate recommendations from text
-            elif isinstance(ai_insights, dict) and ai_insights.get("raw_response"):
-                raw_text = ai_insights["raw_response"]
-                
-                # Generate recommendations based on content analysis
-                if "security" in raw_text.lower() and ("high" in raw_text.lower() or "critical" in raw_text.lower()):
+            logger.info(f"Processing {len(ai_insights)} AI insights for recommendations")
+            for insight in ai_insights:
+                insight_type = insight.get("type")
+                priority = insight.get("priority")
+
+                if insight_type == "security" and priority == "high":
                     recommendations.append({
                         "type": "security_review",
                         "priority": "high",
-                        "title": "Security Review Required",
-                        "description": "Security concerns identified in the analysis.",
+                        "title": "High-Priority Security Review Required",
+                        "description": insight.get("description", "High-priority security concerns identified. Immediate review recommended."),
                         "actions": [
                             "Request security team review",
-                            "Conduct security testing",
-                            "Review data handling practices"
+                            "Conduct vulnerability scanning",
+                            "Review data handling practices and access controls"
                         ]
                     })
                 
-                if "performance" in raw_text.lower() and ("slow" in raw_text.lower() or "bottleneck" in raw_text.lower()):
+                elif insight_type in ["technical_debt", "maintainability"] and priority in ["high", "medium"]:
+                    recommendations.append({
+                        "type": "technical_debt",
+                        "priority": priority,
+                        "title": "Address Technical Debt",
+                        "description": insight.get("description", "Technical debt identified that should be addressed to improve maintainability."),
+                        "actions": [
+                            "Refactor affected code to align with best practices",
+                            "Add comprehensive unit and integration tests",
+                            "Update documentation to reflect changes"
+                        ]
+                    })
+                
+                elif insight_type == "performance" and priority in ["high", "medium"]:
                     recommendations.append({
                         "type": "performance_optimization",
-                        "priority": "medium",
-                        "title": "Performance Optimization",
-                        "description": "Performance concerns identified in the analysis.",
+                        "priority": priority,
+                        "title": "Performance Optimization Recommended",
+                        "description": insight.get("description", "Performance concerns identified. Optimization is recommended to improve response times."),
                         "actions": [
-                            "Profile the code for bottlenecks",
-                            "Optimize algorithms if needed",
-                            "Add performance monitoring"
+                            "Profile the code to identify bottlenecks",
+                            "Optimize algorithms and database queries",
+                            "Implement caching for frequently accessed data"
                         ]
                     })
                 
-                if "test" in raw_text.lower() and ("missing" in raw_text.lower() or "insufficient" in raw_text.lower()):
+                elif insight_type in ["architecture", "patterns"] and priority in ["high", "medium"]:
                     recommendations.append({
-                        "type": "testing",
-                        "priority": "medium",
-                        "title": "Improve Test Coverage",
-                        "description": "Testing concerns identified in the analysis.",
+                        "type": "architecture_review",
+                        "priority": priority,
+                        "title": "Architecture and Design Pattern Review",
+                        "description": insight.get("description", "Architecture or design pattern concerns identified. A review is recommended to ensure scalability and maintainability."),
                         "actions": [
-                            "Add unit tests for new functionality",
-                            "Add integration tests",
-                            "Review test coverage metrics"
+                            "Schedule a review with the architecture team",
+                            "Evaluate alternative design patterns",
+                            "Validate the scalability and long-term impact of the current design"
                         ]
                     })
-            
-            # Add general recommendations if none were generated
-            if not recommendations:
-                recommendations.append({
-                    "type": "general_review",
-                    "priority": "low",
-                    "title": "Standard Code Review",
-                    "description": "Proceed with standard code review process.",
-                    "actions": [
-                        "Review code for best practices",
-                        "Check for potential bugs",
-                        "Verify functionality works as expected"
-                    ]
-                })
-            
+
         except Exception as e:
             logger.error(f"Failed to extract AI recommendations: {e}")
-            # Return a fallback recommendation
             recommendations.append({
                 "type": "general_review",
                 "priority": "low",
                 "title": "Code Review Required",
-                "description": "AI analysis completed. Standard code review recommended.",
+                "description": "AI analysis encountered an error. A standard code review is recommended.",
                 "actions": [
-                    "Review code for best practices",
-                    "Check for potential bugs",
-                    "Verify functionality works as expected"
+                    "Review code for correctness and best practices",
+                    "Check for potential bugs or edge cases",
+                    "Verify that functionality works as expected"
                 ]
             })
         
