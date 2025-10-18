@@ -695,7 +695,7 @@ curl -I -H "Authorization: Bearer $GITLAB_TOKEN" \
 gcloud ai models list --region=us-central1
 
 # Test text generation
-gcloud ai models predict gemini-1.5-pro \
+gcloud ai models predict gemini-2.5-flash-lite \
   --region=us-central1 \
   --json-request='{"instances": [{"prompt": "Hello world"}]}'
 ```

@@ -1,0 +1,112 @@
+flowchart LR
+  %% MergeMind: Production Deployment Architecture
+
+  %% ========== External Services ==========
+  subgraph EXT[External Services]
+    GL[GitLab<br/>Source data • API endpoints • Webhook triggers]
+    FV[Fivetran<br/>Data ingestion • Custom connector • Sync automation]
+    GH[GitHub<br/>Source code • CI/CD triggers • Version control]
+  end
+
+  %% ========== Google Cloud Platform ==========
+  subgraph GCP[Google Cloud Platform]
+
+    %% --- Cloud Run Services ---
+    subgraph CRS[Cloud Run Services]
+      API[mergemind-api<br/>FastAPI Backend<br/>Port 8080 • 2Gi RAM • 2 CPU • Max 10]
+      UI[mergemind-ui<br/>React Frontend<br/>Port 3000 • 512Mi RAM • 1 CPU • Max 5]
+    end
+
+    %% --- Cloud Functions ---
+    subgraph CFUNC[Cloud Functions]
+      CF[dbt-trigger-function<br/>Python 3.11 • 512Mi • 540s Timeout • HTTP Trigger]
+    end
+
+    %% --- BigQuery ---
+    subgraph BQ[BigQuery]
+      BQ_RAW[(mergemind_raw<br/>Raw GitLab data<br/>Fivetran ingestion • Incremental syncs)]
+      BQ_MODELED[(mergemind<br/>Transformed data<br/>dbt models • Business views)]
+    end
+
+    %% --- Vertex AI ---
+    subgraph VAI_PKG[Vertex AI]
+      VAI[Gemini 2.5 Flash Lite<br/>Diff summarization • Risk assessment • Reviewer suggestions]
+    end
+
+    %% --- Secret Manager ---
+    subgraph SECRETS[Secret Manager]
+      GL_SECRET[gitlab-token<br/>GitLab API token • Encrypted • Access control]
+      VAI_SECRET[vertex-ai-key<br/>Vertex AI credentials • Service account • Secure access]
+      DBT_SECRET[dbt-trigger-token<br/>Cloud Function auth • Bearer token • Function security]
+    end
+
+    %% --- Cloud Storage ---
+    subgraph STORAGE[Cloud Storage]
+      TF_STATE[terraform-state<br/>Infrastructure state • Remote backend • State locking]
+      CF_SOURCE[dbt-function-source<br/>Function code • Deployment packages • Version control]
+    end
+
+    %% --- Cloud Build ---
+    subgraph BUILD[Cloud Build]
+      CB_TRIGGER[dbt-automation-trigger<br/>GitHub integration • dbt automation • CI/CD]
+    end
+
+    %% --- Monitoring ---
+    subgraph MON[Monitoring]
+      LOGGING[Cloud Logging<br/>Structured logs • Error tracking]
+      MONITORING[Cloud Monitoring<br/>Metrics • Performance • SLO tracking]
+      ALERTS[Alerting<br/>Policies • Notifications • Incidents]
+    end
+  end
+
+  %% ========== User Access ==========
+  subgraph USERS[User Access]
+    DEV([Developer<br/>Frontend access • MR analysis • AI insights])
+    OPS([DevOps<br/>Infrastructure • Monitoring • Deployment])
+    MGR([Manager<br/>Dashboards • Reports • Team metrics])
+  end
+
+  %% -------- Connections --------
+  GL -->|API Calls| FV
+  FV -->|Data Sync| BQ_RAW
+  FV -->|HTTP Trigger| CF
+  CF -->|dbt Run| BQ_MODELED
+  CF -->|Source Code| CF_SOURCE
+
+  API -->|Query Data| BQ_MODELED
+  API -->|AI Requests| VAI
+  API -->|Credentials| GL_SECRET
+  API -->|Credentials| VAI_SECRET
+  CF -->|Credentials| DBT_SECRET
+
+  UI -->|Static Assets| CF_SOURCE
+  API -->|Logs| LOGGING
+  UI -->|Logs| LOGGING
+  CF -->|Logs| LOGGING
+
+  API -->|Metrics| MONITORING
+  UI -->|Metrics| MONITORING
+  CF -->|Metrics| MONITORING
+  MONITORING -->|Alerts| ALERTS
+
+  GH -->|Code Push| CB_TRIGGER
+  CB_TRIGGER -->|dbt Run| BQ_MODELED
+
+  DEV -->|HTTPS| UI
+  OPS -->|HTTPS| API
+  MGR -->|HTTPS| UI
+
+  API -->|Deploy| CF_SOURCE
+  UI -->|Deploy| CF_SOURCE
+  CB_TRIGGER -->|State| TF_STATE
+
+  %% -------- Styling --------
+  classDef comp fill:#E8F4FD,stroke:#1976D2,color:#000
+  classDef db fill:#F3E5F5,stroke:#7B1FA2,color:#000
+  classDef actor fill:#FFF3E0,stroke:#F57C00,color:#000
+  classDef cloud fill:#E8F5E8,stroke:#388E3C,color:#000
+  classDef note fill:#FFF,stroke:#BBB,color:#333,stroke-dasharray:3 2
+
+  class API,UI,CF,VAI,GL_SECRET,VAI_SECRET,DBT_SECRET,TF_STATE,CF_SOURCE,CB_TRIGGER,LOGGING,MONITORING,ALERTS comp
+  class BQ_RAW,BQ_MODELED db
+  class DEV,OPS,MGR actor

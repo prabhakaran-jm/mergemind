@@ -21,7 +21,8 @@ class Settings(BaseSettings):
     gcp_project_id: str = Field(..., env="GCP_PROJECT_ID")
     bq_dataset_raw: str = Field(default="mergemind_raw", env="BQ_DATASET_RAW")
     bq_dataset_modeled: str = Field(default="mergemind", env="BQ_DATASET_MODELED")
-    vertex_location: str = Field(default="europe-west2", env="VERTEX_LOCATION")
+    vertex_location: str = Field(default="us-central1", env="VERTEX_LOCATION")
+    vertex_ai_model: str = Field(default="gemini-2.5-flash-lite", env="VERTEX_AI_MODEL")
     
     # GitLab
     gitlab_base_url: str = Field(default="", env="GITLAB_BASE_URL")

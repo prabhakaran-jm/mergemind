@@ -1,5 +1,5 @@
 """
-Vertex AI client for text generation using Gemini 1.5.
+Vertex AI client for text generation using Gemini 2.5 Flash Lite.
 """
 
 import os
@@ -31,13 +31,13 @@ class VertexAIClient:
         vertexai.init(project=self.project_id, location=self.location)
         
         # Initialize Gemini model
-        self.model = GenerativeModel("gemini-2.5-flash-lite")
+        self.model = GenerativeModel(settings.vertex_ai_model)
         
         logger.info(f"Vertex AI client initialized for project: {self.project_id}")
     
     def generate_text(self, prompt: str, max_tokens: int = 1000, temperature: float = 0.7) -> str:
         """
-        Generate text using Gemini 1.5.
+        Generate text using Gemini 2.5 Flash Lite.
         
         Args:
             prompt: Input prompt for text generation
@@ -76,7 +76,7 @@ class VertexAIClient:
     def summarize_diff(self, title: str, description: str, files: list, 
                       additions: int, deletions: int, diff_snippets: str) -> Dict[str, Any]:
         """
-        Summarize a merge request diff using Gemini 1.5 Pro.
+        Summarize a merge request diff using Gemini 2.5 Flash Lite.
         
         Args:
             title: Merge request title

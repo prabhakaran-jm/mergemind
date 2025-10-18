@@ -15,6 +15,15 @@ This project is a submission for the **Fivetran Challenge**. It demonstrates a c
 
 ## 🚀 Key Features
 
+### Recent Improvements (v1.0.0)
+
+- **🏗️ Reorganized Architecture**: Clean separation of concerns with `app/` (frontend/backend/ai) and `deploy/` (infrastructure) folders
+- **🔐 Enhanced Security**: Removed all hardcoded values, implemented dynamic configuration with environment variables
+- **📦 Clean Repository**: Eliminated binary files, proper .gitignore/.dockerignore configuration
+- **⚙️ Multi-Environment Support**: Terraform variables for dev/staging/prod deployments
+- **🔄 Event-Driven Pipeline**: Automated dbt triggers with Cloud Functions
+- **📊 Production Ready**: Comprehensive monitoring, logging, and alerting
+
 ### 1. Custom Fivetran Connector for GitLab
 
 A robust, production-grade Fivetran connector that extracts critical SDLC data from the GitLab API.
@@ -120,59 +129,84 @@ At the core of MergeMind is a sophisticated AI engine built on Google Vertex AI 
 ```mermaid
 graph TB
     subgraph "Data Sources"
-        GL[GitLab API]
-        FV[Fivetran Connector]
+        GL[GitLab API<br/>Projects, MRs, Users]
+        FV[Fivetran Connector<br/>Custom GitLab Connector]
     end
     
     subgraph "Event-Driven Pipeline"
-        CF[Cloud Function]
-        dbt[dbt Models]
+        CF[Cloud Function<br/>dbt-trigger-function]
+        dbt[dbt Models<br/>Transformations]
     end
     
-    subgraph "Data Layer"
+    subgraph "Data Warehouse"
         BQ_RAW[BigQuery Raw<br/>mergemind_raw]
         BQ_MODELED[BigQuery Modeled<br/>mergemind]
     end
     
-    subgraph "AI Services"
-        VAI[Vertex AI]
-        RS[Reviewer Service]
-        RISK[Risk Service]
-        SUM[Summary Service]
+    subgraph "AI Services Layer"
+        VAI[Vertex AI<br/>Gemini 2.5 Flash Lite]
+        RS[Reviewer Service<br/>AI Suggestions]
+        RISK[Risk Service<br/>AI Risk Assessment]
+        SUM[Summary Service<br/>AI Diff Summarization]
+        INSIGHTS[AI Insights Service<br/>Comprehensive Analysis]
     end
     
     subgraph "API Layer"
-        API[FastAPI]
-        AUTH[Authentication]
-        RATE[Rate Limiting]
+        API[FastAPI Backend<br/>REST API]
+        MR_ROUTER[MR Router<br/>Individual MR Operations]
+        MRS_ROUTER[MRS Router<br/>MR Listings and Blockers]
+        AI_ROUTER[AI Router<br/>AI Insights and Recommendations]
+        HEALTH[Health Router<br/>Monitoring and Metrics]
     end
     
-    subgraph "Frontend"
-        UI[React App]
-        DASH[Dashboard]
+    subgraph "Frontend Layer"
+        UI[React Frontend<br/>Modern Dashboard]
+        DASH[AIDashboardCard<br/>Main Dashboard]
+        INSIGHTS_UI[AIInsightsCard<br/>AI Analysis Display]
+        RECS[AIRecommendationsCard<br/>Recommendations]
+        BLOCKERS[BlockersCard<br/>Top Blockers]
     end
     
     subgraph "Infrastructure"
-        GCP[Google Cloud]
-        RUN[Cloud Run]
-        LB[Load Balancer]
+        GCP[Google Cloud Platform]
+        RUN_API[Cloud Run API<br/>Backend Service]
+        RUN_UI[Cloud Run UI<br/>Frontend Service]
+        LB[Load Balancer<br/>Traffic Distribution]
+        SECRETS[Secret Manager<br/>Credentials Storage]
     end
     
-    GL --> FV
-    FV --> BQ_RAW
-    FV --> CF
-    CF --> dbt
-    dbt --> BQ_MODELED
-    BQ_MODELED --> API
-    API --> VAI
-    API --> RS
-    API --> RISK
-    API --> SUM
-    API --> UI
-    UI --> DASH
-    API --> RUN
-    RUN --> LB
-    LB --> GCP
+    %% Data Flow
+    GL -->|API Calls| FV
+    FV -->|Sync Data| BQ_RAW
+    FV -->|Trigger| CF
+    CF -->|Run Transformations| dbt
+    dbt -->|Modeled Data| BQ_MODELED
+    
+    %% API Data Flow
+    BQ_MODELED -->|Query Data| API
+    API -->|AI Requests| VAI
+    API -->|Service Calls| RS
+    API -->|Service Calls| RISK
+    API -->|Service Calls| SUM
+    API -->|Service Calls| INSIGHTS
+    
+    %% Frontend Flow
+    API -->|REST API| UI
+    UI -->|Components| DASH
+    UI -->|Components| INSIGHTS_UI
+    UI -->|Components| RECS
+    UI -->|Components| BLOCKERS
+    
+    %% Infrastructure
+    API -->|Deploy| RUN_API
+    UI -->|Deploy| RUN_UI
+    RUN_API -->|Traffic| LB
+    RUN_UI -->|Traffic| LB
+    LB -->|Serve| GCP
+    
+    %% Security
+    API -->|Credentials| SECRETS
+    CF -->|Credentials| SECRETS
 ```
 
 ### Core Components
@@ -184,6 +218,13 @@ graph TB
 - **AI Services**: Vertex AI for diff summarization and analysis
 - **API Layer**: FastAPI with comprehensive endpoints
 - **Frontend**: React dashboard for MR management
+
+### Detailed Architecture Diagrams
+
+For comprehensive architecture documentation, see:
+- [Architecture Diagram](docs/ARCHITECTURE_DIAGRAM.puml) - Complete system architecture
+- [Data Flow Diagram](docs/DATA_FLOW_DIAGRAM.puml) - Event-driven pipeline flow
+- [Deployment Architecture](docs/DEPLOYMENT_ARCHITECTURE.puml) - Production deployment structure
 
 ## 📦 Installation
 
@@ -282,7 +323,7 @@ The MergeMind platform features a fully automated event-driven data pipeline tha
 - **Sync Frequency**: Configurable (default: 1 hour)
 
 #### Cloud Function (dbt Trigger)
-- **Location**: `infra/gcp/terraform/cloud_function/`
+- **Location**: `deploy/terraform/cloud_function/`
 - **Purpose**: Triggers dbt runs when new data arrives
 - **Runtime**: Python 3.11 with dbt-core and dbt-bigquery
 - **Timeout**: 5 minutes (configurable)
@@ -297,7 +338,7 @@ The MergeMind platform features a fully automated event-driven data pipeline tha
 
 ```bash
 # Deploy infrastructure
-cd infra/gcp/terraform
+cd deploy/terraform
 terraform init
 terraform plan
 terraform apply
@@ -330,6 +371,7 @@ GCP_PROJECT_ID=your-project-id
 BQ_DATASET_RAW=mergemind_raw
 BQ_DATASET_MODELED=mergemind
 VERTEX_LOCATION=us-central1
+VERTEX_AI_MODEL=gemini-2.5-flash-lite
 
 # GitLab Configuration
 GITLAB_BASE_URL=https://your-gitlab.com
@@ -575,6 +617,9 @@ For comprehensive monitoring setup, see the monitoring folder documentation.
 - Security headers
 - Data encryption at rest and in transit
 - Access logging and audit trails
+- **Dynamic configuration** - No hardcoded secrets or project IDs
+- **Environment-based secrets management** - All sensitive data in environment variables
+- **Secure file handling** - Proper .gitignore and .dockerignore configuration
 
 ### Compliance
 
@@ -645,23 +690,36 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🗺️ Roadmap
 
+### ✅ v1.0.0 (Current - Fivetran Challenge Submission)
+- ✅ Custom Fivetran connector for GitLab
+- ✅ Event-driven data pipeline with Cloud Functions
+- ✅ AI-powered merge request analysis
+- ✅ Risk assessment and reviewer suggestions
+- ✅ Automated diff summarization
+- ✅ Modern React dashboard
+- ✅ Production-ready infrastructure
+- ✅ Comprehensive monitoring and alerting
+
 ### v1.1.0 (Q2 2024)
-- Authentication and authorization
-- Webhook notifications
-- Bulk operations
-- Advanced filtering and search
+- 🔄 Authentication and authorization
+- 🔄 Webhook notifications for real-time updates
+- 🔄 Bulk operations for MR management
+- 🔄 Advanced filtering and search capabilities
+- 🔄 Multi-environment support (dev/staging/prod)
 
 ### v1.2.0 (Q3 2024)
-- Real-time updates
-- Advanced analytics
-- Custom risk rules
-- Team collaboration features
+- 📋 Real-time collaboration features
+- 📋 Advanced analytics and reporting
+- 📋 Custom risk rules and thresholds
+- 📋 Team performance metrics
+- 📋 Integration with additional Git providers
 
 ### v2.0.0 (Q4 2024)
-- Multi-repository support
-- Advanced AI models
-- Enterprise features
-- Self-hosted deployment
+- 📋 Multi-repository and multi-organization support
+- 📋 Advanced AI models (GPT-4, Claude)
+- 📋 Enterprise SSO and RBAC
+- 📋 Self-hosted deployment options
+- 📋 Advanced workflow automation
 
 ## 🙏 Acknowledgments
 

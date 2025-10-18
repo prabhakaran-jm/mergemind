@@ -404,7 +404,7 @@ Generate AI-powered summary of the merge request.
     "Test session timeout scenarios"
   ],
   "generated_at": "2024-01-01T12:00:00Z",
-  "model_version": "gemini-1.5-pro"
+  "model_version": "gemini-2.5-flash-lite"
 }
 ```
 
@@ -652,7 +652,7 @@ Reset application metrics (admin only).
     "Validate API error response format consistency"
   ],
   "generated_at": "2024-01-01T12:00:00Z",
-  "model_version": "gemini-1.5-pro"
+  "model_version": "gemini-2.5-flash-lite"
 }
 ```
 

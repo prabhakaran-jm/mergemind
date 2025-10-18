@@ -67,7 +67,7 @@ class VertexAIExporter:
         
         # Initialize Vertex AI
         vertexai.init(project=self.project_id, location=self.location)
-        self.model = GenerativeModel("gemini-2.0-flash-exp")
+        self.model = GenerativeModel("gemini-2.5-flash-lite")
         
         logger.info(f"Vertex AI exporter initialized for project: {self.project_id}")
     
@@ -87,7 +87,7 @@ class VertexAIExporter:
             
         except Exception as e:
             logger.error(f"Failed to collect Vertex AI metrics: {e}")
-            vertex_ai_requests_total.labels(model='gemini-2.0-flash-exp', status='error').inc()
+            vertex_ai_requests_total.labels(model='gemini-2.5-flash-lite', status='error').inc()
     
     def _test_model_availability(self):
         """Test model availability."""
@@ -104,22 +104,22 @@ class VertexAIExporter:
             duration = time.time() - start_time
             
             # Record metrics
-            vertex_ai_requests_total.labels(model='gemini-2.0-flash-exp', status='success').inc()
-            vertex_ai_request_duration_seconds.labels(model='gemini-2.0-flash-exp').observe(duration)
-            vertex_ai_model_availability.labels(model='gemini-2.0-flash-exp').set(1.0)
+            vertex_ai_requests_total.labels(model='gemini-2.5-flash-lite', status='success').inc()
+            vertex_ai_request_duration_seconds.labels(model='gemini-2.5-flash-lite').observe(duration)
+            vertex_ai_model_availability.labels(model='gemini-2.5-flash-lite').set(1.0)
             
             # Count tokens (approximate)
             if response.text:
                 input_tokens = len("Hello, this is a test.") // 4  # Rough estimate
                 output_tokens = len(response.text) // 4  # Rough estimate
                 
-                vertex_ai_tokens_total.labels(model='gemini-2.0-flash-exp', token_type='input').inc(input_tokens)
-                vertex_ai_tokens_total.labels(model='gemini-2.0-flash-exp', token_type='output').inc(output_tokens)
+                vertex_ai_tokens_total.labels(model='gemini-2.5-flash-lite', token_type='input').inc(input_tokens)
+                vertex_ai_tokens_total.labels(model='gemini-2.5-flash-lite', token_type='output').inc(output_tokens)
             
         except Exception as e:
             logger.error(f"Model availability test failed: {e}")
-            vertex_ai_requests_total.labels(model='gemini-2.0-flash-exp', status='error').inc()
-            vertex_ai_model_availability.labels(model='gemini-2.0-flash-exp').set(0.0)
+            vertex_ai_requests_total.labels(model='gemini-2.5-flash-lite', status='error').inc()
+            vertex_ai_model_availability.labels(model='gemini-2.5-flash-lite').set(0.0)
     
     def _collect_quota_metrics(self):
         """Collect quota usage metrics."""
@@ -149,20 +149,20 @@ class VertexAIExporter:
             duration = time.time() - start_time
             
             # Record metrics
-            vertex_ai_requests_total.labels(model='gemini-2.0-flash-exp', status='success').inc()
-            vertex_ai_request_duration_seconds.labels(model='gemini-2.0-flash-exp').observe(duration)
+            vertex_ai_requests_total.labels(model='gemini-2.5-flash-lite', status='success').inc()
+            vertex_ai_request_duration_seconds.labels(model='gemini-2.5-flash-lite').observe(duration)
             
             # Count tokens
             if response.text:
                 input_tokens = len("What is 2+2?") // 4  # Rough estimate
                 output_tokens = len(response.text) // 4  # Rough estimate
                 
-                vertex_ai_tokens_total.labels(model='gemini-2.0-flash-exp', token_type='input').inc(input_tokens)
-                vertex_ai_tokens_total.labels(model='gemini-2.0-flash-exp', token_type='output').inc(output_tokens)
+                vertex_ai_tokens_total.labels(model='gemini-2.5-flash-lite', token_type='input').inc(input_tokens)
+                vertex_ai_tokens_total.labels(model='gemini-2.5-flash-lite', token_type='output').inc(output_tokens)
             
         except Exception as e:
             logger.error(f"Model request test failed: {e}")
-            vertex_ai_requests_total.labels(model='gemini-2.0-flash-exp', status='error').inc()
+            vertex_ai_requests_total.labels(model='gemini-2.5-flash-lite', status='error').inc()
 
 # Global exporter instance
 exporter = VertexAIExporter()

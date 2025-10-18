@@ -56,7 +56,7 @@ variable "vertex_ai_location" {
 variable "vertex_ai_model" {
   description = "Vertex AI Model to use"
   type        = string
-  default     = "gemini-2.0-flash-exp"
+  default     = "gemini-2.5-flash-lite"
 }
 
 variable "bigquery_slot_capacity" {

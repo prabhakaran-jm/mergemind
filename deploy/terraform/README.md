@@ -87,7 +87,7 @@ chmod +x deploy_function.sh
 
 - `bigquery_location`: BigQuery dataset location (default: US)
 - `vertex_ai_location`: Vertex AI location (default: us-central1)
-- `vertex_ai_model`: Vertex AI model to use (default: gemini-1.5-pro)
+- `vertex_ai_model`: Vertex AI model to use (default: gemini-2.5-flash-lite)
 - `enable_*`: Feature flags to enable/disable specific resources
 
 ## Resources Created

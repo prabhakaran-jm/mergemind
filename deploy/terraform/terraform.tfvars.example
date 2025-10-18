@@ -14,7 +14,7 @@ bq_dataset_modeled = "mergemind"
 # Vertex AI Configuration
 enable_vertex_ai     = true
 vertex_ai_location   = "us-central1"
-vertex_ai_model      = "gemini-2.0-flash-exp"
+vertex_ai_model      = "gemini-2.5-flash-lite"
 
 # BigQuery Configuration
 enable_bigquery      = true

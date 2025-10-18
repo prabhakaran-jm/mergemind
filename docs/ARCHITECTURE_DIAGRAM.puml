@@ -1,0 +1,122 @@
+flowchart TD
+  %% Title
+  T[MergeMind: AI-Powered Software Development Intelligence Platform]:::title
+
+  %% ========== Data Sources ==========
+  subgraph DS[Data Sources]
+    GL[GitLab API]:::comp
+    FV[Fivetran Connector]:::comp
+    NGL[[Projects, Merge Requests<br/>Users, Pipelines]]:::note
+    NFV[[Custom GitLab Connector<br/>Incremental Syncs<br/>Dynamic Project Discovery]]:::note
+    GL --- NGL
+    FV --- NFV
+  end
+
+  %% ========== Event-Driven Pipeline ==========
+  subgraph EDP[Event-Driven Pipeline]
+    CF[Cloud Function<br/><small>dbt-trigger-function<br/>Python 3.11 • Bearer Token</small>]:::comp
+    DBT[dbt Models<br/><small>Raw → Modeled • Automated Runs</small>]:::comp
+  end
+
+  %% ========== Data Warehouse ==========
+  subgraph DWH[Data Warehouse]
+    subgraph BQR[BigQuery Raw<br/><small>mergemind_raw</small>]
+      MR[(merge_requests)]:::db
+      MN[(mr_notes)]:::db
+      US[(users)]:::db
+      PR[(projects)]:::db
+      PP[(pipelines)]:::db
+    end
+    subgraph BQM[BigQuery Modeled<br/><small>mergemind</small>]
+      MAV[(mr_activity_view)]:::db
+      MRF[(merge_risk_features)]:::db
+      CTV[(cycle_time_view)]:::db
+      CRG[(co_review_graph)]:::db
+    end
+  end
+
+  %% ========== AI Services Layer ==========
+  subgraph AIS[AI Services Layer]
+    VAI[Vertex AI<br/><small>Gemini 2.5 Flash Lite</small>]:::comp
+    RS[Reviewer Service<br/><small>Suggestions • Workload • Expertise</small>]:::comp
+    RISK[Risk Service<br/><small>Assessment • Security</small>]:::comp
+    SUM[Summary Service<br/><small>Diff Summaries • Caching</small>]:::comp
+    INS[AI Insights Service<br/><small>Trends • Predictions • Recs</small>]:::comp
+  end
+
+  %% ========== API Layer ==========
+  subgraph API_LAYER[API Layer]
+    API[FastAPI Backend<br/><small>REST • Python 3.11</small>]:::comp
+    MR_ROUTER[MR Router]:::comp
+    MRS_ROUTER[MRS Router]:::comp
+    AI_ROUTER[AI Router]:::comp
+    HEALTH[Health Router]:::comp
+  end
+
+  %% ========== Frontend Layer ==========
+  subgraph FE[Frontend Layer]
+    UI[React Frontend<br/><small>TypeScript • Responsive</small>]:::comp
+    DASH[AIDashboardCard]:::comp
+    INS_UI[AIInsightsCard]:::comp
+    RECS[AIRecommendationsCard]:::comp
+    BLOCKERS[BlockersCard]:::comp
+  end
+
+  %% ========== Infrastructure ==========
+  subgraph INFRA[Infrastructure]
+    GCP[(Google Cloud Platform)]:::cloud
+    RUN_API[Cloud Run API<br/><small>Auto-scaling • Containers</small>]:::comp
+    RUN_UI[Cloud Run UI<br/><small>Static • CDN</small>]:::comp
+    LB[Load Balancer<br/><small>SSL • Health Checks</small>]:::comp
+    SECRETS[Secret Manager<br/><small>Encrypted • Access Control</small>]:::comp
+  end
+
+  %% -------- Data Flow Connections --------
+  GL -- API Calls --> FV
+  FV -- Sync Data --> BQR
+  FV -- HTTP Trigger --> CF
+  CF -- Run Transformations --> DBT
+  DBT -- Modeled Data --> BQM
+
+  %% -------- API Data Flow --------
+  BQM -- Query Data --> API
+  API -- AI Requests --> VAI
+  API -- Service Calls --> RS
+  API -- Service Calls --> RISK
+  API -- Service Calls --> SUM
+  API -- Service Calls --> INS
+
+  %% -------- Routers --------
+  API --> MR_ROUTER
+  API --> MRS_ROUTER
+  API --> AI_ROUTER
+  API --> HEALTH
+
+  %% -------- Frontend Flow --------
+  API -- REST API --> UI
+  UI --> DASH
+  UI --> INS_UI
+  UI --> RECS
+  UI --> BLOCKERS
+
+  %% -------- Infrastructure --------
+  API -- Deploy --> RUN_API
+  UI -- Deploy --> RUN_UI
+  RUN_API -- Traffic --> LB
+  RUN_UI -- Traffic --> LB
+  LB -- Serve --> GCP
+
+  %% -------- Security --------
+  API -- Credentials --> SECRETS
+  CF -- Credentials --> SECRETS
+
+  %% ========== Styles ==========
+  classDef comp fill:#E8F4FD,stroke:#1976D2,color:#000,stroke-width:1px
+  classDef db fill:#F3E5F5,stroke:#7B1FA2,color:#000,stroke-width:1px
+  classDef cloud fill:#E8F5E8,stroke:#388E3C,color:#000,stroke-width:1px,stroke-dasharray: 3 2
+  classDef note fill:#fff,stroke:#bbb,color:#333,stroke-dasharray: 2 2
+  classDef title fill:#fff,stroke:#fff,color:#000,font-size:18px
+
+  class GL,FV,CF,DBT,API,MR_ROUTER,MRS_ROUTER,AI_ROUTER,HEALTH,UI,DASH,INS_UI,RECS,BLOCKERS,RUN_API,RUN_UI,LB,SECRETS,RS,RISK,SUM,INS,VAI comp
+  class MR,MN,US,PR,PP,MAV,MRF,CTV,CRG db
+  class GCP cloud

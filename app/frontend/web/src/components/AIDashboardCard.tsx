@@ -325,7 +325,7 @@ export const AIDashboardCard = () => {
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
-        <span>AI Dashboard • Powered by Gemini AI</span>
+        <span>AI Dashboard • Powered by Gemini 2.5 Flash Lite</span>
         <button 
           onClick={fetchAIDashboard}
           style={{

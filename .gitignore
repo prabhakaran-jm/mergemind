@@ -101,6 +101,7 @@ service-account-key.json
 .env.production.local
 dbt.env
 *.env
+!.env.example
 
 # GitLab Configuration Files (contain sensitive data)
 infra/gitlab/scripts/config.env

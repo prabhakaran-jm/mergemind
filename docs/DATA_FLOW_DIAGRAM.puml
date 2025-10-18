@@ -1,0 +1,55 @@
+flowchart LR
+  %% MergeMind: Event-Driven Data Pipeline Flow
+
+  %% Main flow
+  A[GitLab Events<br/>New MRs, Updates, Comments, Pipeline Changes]
+  B[Fivetran Connector Sync<br/>Incremental via updated_after<br/>Dynamic project discovery]
+  C[Ingest to BigQuery Raw<br/>mergemind_raw dataset<br/>Structured tables]
+  D[Fivetran Triggers Cloud Function<br/>HTTP POST to dbt-trigger-function<br/>Bearer token auth]
+  E[Cloud Function Validates Request<br/>Auth token • Validate payload • Log trigger]
+  F[Cloud Function Runs dbt<br/>Execute dbt run<br/>Transform raw to modeled views]
+  G[Data Transformation Complete<br/>mergemind dataset<br/>Business-ready views such as mr_activity_view]
+  H[API Queries Modeled Data<br/>FastAPI • BigQuery<br/>Real-time access]
+  I[AI Services Process Data<br/>Vertex AI analysis<br/>Risk • Reviewer • Summaries]
+  J[Frontend Displays Results<br/>React dashboard<br/>AI insights • Recommendations • Real-time updates]
+
+  %% Sequential flow
+  A --> B --> C --> D --> E --> F --> G --> H --> I --> J
+
+  %% Parallel processes
+  subgraph Parallel Processes
+    direction TB
+    P1[User Creates MR]
+    P2[MR Gets Comments]
+    P3[Pipeline Runs]
+    P4[Code Changes]
+    P5[AI Analysis]
+    P6[Risk Assessment]
+    P7[Reviewer Suggestions]
+    P8[Trend Analysis]
+  end
+
+  %% Connections to parallel flow
+  A -. triggers .-> P1
+  A -. triggers .-> P2
+  A -. triggers .-> P3
+  A -. triggers .-> P4
+  I -. feeds .-> P5
+  I -. feeds .-> P6
+  I -. feeds .-> P7
+  I -. feeds .-> P8
+
+  %% Error handling
+  E --- N1[[Validation fails:<br/>- Log error<br/>- Return 400<br/>- Alert monitoring]]
+  F --- N2[[dbt fails:<br/>- Retry<br/>- Log error<br/>- Alert team]]
+
+  %% Performance notes
+  J --- N3[[Performance:<br/>- Fivetran ≈ 1h<br/>- Cloud Function < 5m<br/>- dbt ≈ 2–3m<br/>- API < 500ms<br/>- AI ≈ 2–5s]]
+
+  %% Styling
+  classDef step fill:#E8F4FD,stroke:#1976D2,color:#000
+  classDef parallel fill:#FFFDE7,stroke:#FBC02D,color:#000
+  classDef note fill:#FFF,stroke:#BBB,color:#333,stroke-dasharray:3 2
+  class A,B,C,D,E,F,G,H,I,J step
+  class P1,P2,P3,P4,P5,P6,P7,P8 parallel
+  class N1,N2,N3 note

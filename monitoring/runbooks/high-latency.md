@@ -98,7 +98,7 @@ LIMIT 10
 curl -w "@curl-format.txt" -o /dev/null -s https://your-gitlab.com/api/v4/user
 
 # Check Vertex AI response times
-gcloud ai models predict gemini-1.5-pro --region=us-central1 --json-request='{"instances": [{"prompt": "test"}]}'
+gcloud ai models predict gemini-2.5-flash-lite --region=us-central1 --json-request='{"instances": [{"prompt": "test"}]}'
 ```
 
 ## Mitigation Strategies
