@@ -52,6 +52,29 @@ sources:
             description: "Target branch name"
           - name: web_url
             description: "Web URL of the merge request"
+          # Enhanced fields for AI analysis
+          - name: additions
+            description: "Number of lines added"
+          - name: deletions
+            description: "Number of lines deleted"
+          - name: last_pipeline_status
+            description: "Status of the most recent pipeline"
+          - name: last_pipeline_age_min
+            description: "Age of the most recent pipeline in minutes"
+          - name: notes_count_24h
+            description: "Number of notes/comments in the last 24 hours"
+          - name: approvals_left
+            description: "Number of approvals remaining"
+          - name: work_in_progress
+            description: "Whether the merge request is work in progress"
+          - name: labels
+            description: "JSON array of labels"
+          - name: milestone_id
+            description: "Milestone ID"
+          - name: merge_user_id
+            description: "User ID who merged the request"
+          - name: merge_commit_sha
+            description: "SHA of the merge commit"
 
       - name: projects
         description: "Raw projects data from GitLab"

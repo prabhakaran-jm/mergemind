@@ -8,8 +8,9 @@ import logging
 from typing import Dict, Any, List, Optional, Iterator
 from datetime import datetime, timedelta
 import requests
-from dotenv import load_dotenv
+# from dotenv import load_dotenv  # Not used in this version
 from fivetran_connector_sdk import Operations as op
+from fivetran_connector_sdk import Connector
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -199,6 +200,18 @@ def schema(configuration: Dict[str, Any] = None) -> List[Dict[str, Any]]:
                 "source_branch": "STRING",
                 "target_branch": "STRING",
                 "web_url": "STRING",
+                # Enhanced fields for AI analysis
+                "additions": "INT",
+                "deletions": "INT",
+                "last_pipeline_status": "STRING",
+                "last_pipeline_age_min": "INT",
+                "notes_count_24h": "INT",
+                "approvals_left": "INT",
+                "work_in_progress": "BOOLEAN",
+                "labels": "STRING",  # JSON array of labels
+                "milestone_id": "INT",
+                "merge_user_id": "INT",
+                "merge_commit_sha": "STRING",
             }
         },
         {
@@ -365,6 +378,18 @@ def update(configuration: Dict[str, Any] = None, state: Dict[str, Any] = None) -
                     "source_branch": mr["source_branch"],
                     "target_branch": mr["target_branch"],
                     "web_url": mr["web_url"],
+                    # Enhanced fields
+                    "additions": mr.get("additions", 0),
+                    "deletions": mr.get("deletions", 0),
+                    "last_pipeline_status": mr.get("last_pipeline_status", "unknown"),
+                    "last_pipeline_age_min": mr.get("last_pipeline_age_min", 0),
+                    "notes_count_24h": mr.get("notes_count_24h", 0),
+                    "approvals_left": mr.get("approvals_left", 0),
+                    "work_in_progress": mr.get("work_in_progress", False),
+                    "labels": mr.get("labels", "[]"),
+                    "milestone_id": mr.get("milestone_id"),
+                    "merge_user_id": mr.get("merge_user_id"),
+                    "merge_commit_sha": mr.get("merge_commit_sha"),
                 })
                 mr_count += 1
                 
@@ -372,6 +397,8 @@ def update(configuration: Dict[str, Any] = None, state: Dict[str, Any] = None) -
                 user_ids.add(mr["author"]["id"])
                 if mr.get("assignee"):
                     user_ids.add(mr["assignee"]["id"])
+                if mr.get("merge_user_id"):
+                    user_ids.add(mr["merge_user_id"])
         
         logger.info(f"Successfully processed {mr_count} records for table merge_requests")
         
@@ -448,7 +475,7 @@ def _make_request(url: str, params: Dict[str, Any] | List[tuple] = None, config:
 
 
 def _get_merge_requests(project_id: int, updated_after: Optional[datetime] = None, config: Dict[str, Any] = None) -> List[Dict[str, Any]]:
-    """Get merge requests for a project with incremental sync support."""
+    """Get merge requests for a project with incremental sync support and enhanced data."""
     config = config or DEFAULT_CONFIG
     url = f"{config['gitlab_base_url']}/api/v4/projects/{project_id}/merge_requests"
     
@@ -471,7 +498,10 @@ def _get_merge_requests(project_id: int, updated_after: Optional[datetime] = Non
         if not response:
             break
             
-        all_mrs.extend(response)
+        # Enhance each MR with additional data
+        for mr in response:
+            enhanced_mr = _enhance_merge_request_data(mr, project_id, config)
+            all_mrs.append(enhanced_mr)
         
         if len(response) < 100:  # Last page
             break
@@ -480,6 +510,150 @@ def _get_merge_requests(project_id: int, updated_after: Optional[datetime] = Non
     
     logger.info(f"Fetched {len(all_mrs)} merge requests for project {project_id}")
     return all_mrs
+
+
+def _enhance_merge_request_data(mr: Dict[str, Any], project_id: int, config: Dict[str, Any]) -> Dict[str, Any]:
+    """Enhance merge request data with additional fields from GitLab API."""
+    mr_id = mr["iid"]  # GitLab uses iid for API calls
+    
+    # Get diff statistics
+    diff_stats = _get_mr_diff_stats(project_id, mr_id, config)
+    
+    # Get pipeline status
+    pipeline_data = _get_mr_pipeline_data(project_id, mr_id, config)
+    
+    # Get approval data
+    approval_data = _get_mr_approval_data(project_id, mr_id, config)
+    
+    # Get notes count (last 24h)
+    notes_count = _get_mr_notes_count(project_id, mr_id, config)
+    
+    # Enhance the MR data
+    enhanced_mr = mr.copy()
+    enhanced_mr.update({
+        "additions": diff_stats.get("additions", 0),
+        "deletions": diff_stats.get("deletions", 0),
+        "last_pipeline_status": pipeline_data.get("status", "unknown"),
+        "last_pipeline_age_min": pipeline_data.get("age_minutes", 0),
+        "notes_count_24h": notes_count,
+        "approvals_left": approval_data.get("approvals_left", 0),
+        "work_in_progress": mr.get("work_in_progress", False),
+        "labels": json.dumps([label["title"] for label in mr.get("labels", [])]),
+        "milestone_id": mr.get("milestone", {}).get("id") if mr.get("milestone") else None,
+        "merge_user_id": mr.get("merge_user", {}).get("id") if mr.get("merge_user") else None,
+        "merge_commit_sha": mr.get("merge_commit_sha"),
+    })
+    
+    return enhanced_mr
+
+
+def _get_mr_diff_stats(project_id: int, mr_id: int, config: Dict[str, Any]) -> Dict[str, int]:
+    """Get diff statistics (additions/deletions) for a merge request."""
+    try:
+        url = f"{config['gitlab_base_url']}/api/v4/projects/{project_id}/merge_requests/{mr_id}/changes"
+        response = _make_request(url, config=config)
+        
+        if response and "changes" in response:
+            additions = 0
+            deletions = 0
+            
+            for change in response["changes"]:
+                if "diff" in change:
+                    diff_lines = change["diff"].split('\n')
+                    for line in diff_lines:
+                        if line.startswith('+') and not line.startswith('+++'):
+                            additions += 1
+                        elif line.startswith('-') and not line.startswith('---'):
+                            deletions += 1
+            
+            return {"additions": additions, "deletions": deletions}
+        
+        return {"additions": 0, "deletions": 0}
+        
+    except Exception as e:
+        logger.warning(f"Failed to get diff stats for MR {mr_id}: {e}")
+        return {"additions": 0, "deletions": 0}
+
+
+def _get_mr_pipeline_data(project_id: int, mr_id: int, config: Dict[str, Any]) -> Dict[str, Any]:
+    """Get pipeline status and age for a merge request."""
+    try:
+        url = f"{config['gitlab_base_url']}/api/v4/projects/{project_id}/merge_requests/{mr_id}/pipelines"
+        response = _make_request(url, config=config)
+        
+        if response and len(response) > 0:
+            latest_pipeline = response[0]  # Most recent pipeline
+            status = latest_pipeline.get("status", "unknown")
+            
+            # Calculate age in minutes
+            age_minutes = 0
+            if "updated_at" in latest_pipeline:
+                try:
+                    pipeline_time = datetime.fromisoformat(latest_pipeline["updated_at"].replace('Z', '+00:00'))
+                    age_minutes = int((datetime.utcnow().replace(tzinfo=pipeline_time.tzinfo) - pipeline_time).total_seconds() / 60)
+                except Exception:
+                    age_minutes = 0
+            
+            return {"status": status, "age_minutes": age_minutes}
+        
+        return {"status": "unknown", "age_minutes": 0}
+        
+    except Exception as e:
+        logger.warning(f"Failed to get pipeline data for MR {mr_id}: {e}")
+        return {"status": "unknown", "age_minutes": 0}
+
+
+def _get_mr_approval_data(project_id: int, mr_id: int, config: Dict[str, Any]) -> Dict[str, int]:
+    """Get approval data for a merge request."""
+    try:
+        url = f"{config['gitlab_base_url']}/api/v4/projects/{project_id}/merge_requests/{mr_id}/approvals"
+        response = _make_request(url, config=config)
+        
+        if response:
+            approvals_left = response.get("approvals_left", 0)
+            return {"approvals_left": approvals_left}
+        
+        return {"approvals_left": 0}
+        
+    except Exception as e:
+        logger.warning(f"Failed to get approval data for MR {mr_id}: {e}")
+        return {"approvals_left": 0}
+
+
+def _get_mr_notes_count(project_id: int, mr_id: int, config: Dict[str, Any]) -> int:
+    """Get count of notes/comments in the last 24 hours."""
+    try:
+        # Calculate 24 hours ago
+        twenty_four_hours_ago = datetime.utcnow() - timedelta(hours=24)
+        
+        url = f"{config['gitlab_base_url']}/api/v4/projects/{project_id}/merge_requests/{mr_id}/notes"
+        params = {
+            "per_page": 100,
+            "sort": "desc",
+            "order_by": "created_at"
+        }
+        
+        response = _make_request(url, params=params, config=config)
+        
+        if response:
+            count = 0
+            for note in response:
+                try:
+                    note_time = datetime.fromisoformat(note["created_at"].replace('Z', '+00:00'))
+                    if note_time >= twenty_four_hours_ago:
+                        count += 1
+                    else:
+                        break  # Notes are sorted by created_at desc
+                except Exception:
+                    continue
+            
+            return count
+        
+        return 0
+        
+    except Exception as e:
+        logger.warning(f"Failed to get notes count for MR {mr_id}: {e}")
+        return 0
 
 
 def _get_project_info(project_id: int, config: Dict[str, Any] = None) -> Optional[Dict[str, Any]]:
@@ -597,5 +771,4 @@ def _trigger_dbt_run(config: Dict[str, Any], sync_state: Dict[str, Any]) -> None
 
 
 # Create connector object for Fivetran SDK
-from fivetran_connector_sdk import Connector
 connector = Connector(update, schema)

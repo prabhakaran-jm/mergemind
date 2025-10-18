@@ -151,8 +151,8 @@ class ReviewerService:
               id as mr_id,
               project_id,
               title,
-              0 as additions,
-              0 as deletions,
+              additions,
+              deletions,
               state,
               created_at,
               updated_at

@@ -1,6 +1,6 @@
 {{ config(materialized='view') }}
 
--- Simplified MR activity view using only available raw data
+-- Enhanced MR activity view using real data from Fivetran connector
 SELECT
   id as mr_id,
   project_id, 
@@ -8,13 +8,13 @@ SELECT
   author_id, 
   created_at, 
   state,
-  -- Default values for missing fields
-  'unknown' AS last_pipeline_status,
-  0 AS last_pipeline_age_min,
-  0 AS notes_count_24h,
-  0 AS approvals_left,
-  0 AS additions, 
-  0 AS deletions,
+  -- Real data from enhanced connector
+  last_pipeline_status,
+  last_pipeline_age_min,
+  notes_count_24h,
+  approvals_left,
+  additions, 
+  deletions,
   TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), created_at, HOUR) AS age_hours,
   source_branch,
   target_branch,
@@ -22,5 +22,11 @@ SELECT
   assignee_id,
   updated_at,
   merged_at,
-  closed_at
-FROM `ai-accelerate-mergemind.mergemind_raw.merge_requests`
+  closed_at,
+  -- Additional enhanced fields
+  work_in_progress,
+  labels,
+  milestone_id,
+  merge_user_id,
+  merge_commit_sha
+FROM {{ source('raw', 'merge_requests') }}

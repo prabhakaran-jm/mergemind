@@ -97,12 +97,12 @@ class SummaryService:
               author_id,
               created_at,
               state,
-              0 as additions,
-              0 as deletions,
-              'unknown' as last_pipeline_status,
-              0 as last_pipeline_age_min,
-              0 as notes_count_24h,
-              0 as approvals_left
+              additions,
+              deletions,
+              last_pipeline_status,
+              last_pipeline_age_min,
+              notes_count_24h,
+              approvals_left
             FROM `mergemind_raw.merge_requests`
             WHERE id = @mr_id
             LIMIT 1

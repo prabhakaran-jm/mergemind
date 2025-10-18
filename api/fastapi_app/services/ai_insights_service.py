@@ -108,12 +108,12 @@ class AIInsightsService:
                 title,
                 author_id,
                 state,
-                'unknown' as last_pipeline_status,
-                0 as last_pipeline_age_min,
-                0 as notes_count_24h,
-                0 as approvals_left,
-                0 as additions,
-                0 as deletions,
+                last_pipeline_status,
+                last_pipeline_age_min,
+                notes_count_24h,
+                approvals_left,
+                additions,
+                deletions,
                 TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), created_at, HOUR) AS age_hours,
                 source_branch,
                 target_branch,
@@ -123,6 +123,8 @@ class AIInsightsService:
                 updated_at,
                 merged_at,
                 closed_at,
+                work_in_progress,
+                labels,
                 CURRENT_TIMESTAMP() as data_freshness
             FROM `{self.project_id}.mergemind_raw.merge_requests`
             WHERE id = {mr_id}
