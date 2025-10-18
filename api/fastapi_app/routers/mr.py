@@ -106,7 +106,7 @@ async def get_mr_context(
             "risk": risk,
             "last_pipeline": last_pipeline,
             "approvals_left": context.get("approvals_left", 0),
-            "notes_recent": context.get("notes_count_24h", 0),
+            "notes_recent": context.get("notes_count_24_h", 0),
             "size": size,
             "labels": context.get("labels", []),
             "web_url": context.get("web_url"),
@@ -230,7 +230,7 @@ async def get_mr_stats(
         
         sql = """
         SELECT 
-          id as mr_id,
+          mr_id,
           project_id,
           title,
           author_id,
@@ -240,10 +240,10 @@ async def get_mr_stats(
           deletions,
           last_pipeline_status,
           last_pipeline_age_min,
-          notes_count_24h,
+          notes_count_24_h,
           approvals_left
-        FROM `mergemind_raw.merge_requests`
-        WHERE id = @mr_id
+        FROM `ai-accelerate-mergemind.mergemind.mr_activity_view`
+        WHERE mr_id = @mr_id
         LIMIT 1
         """
         

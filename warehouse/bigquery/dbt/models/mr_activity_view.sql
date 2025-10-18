@@ -11,7 +11,7 @@ SELECT
   -- Real data from enhanced connector
   last_pipeline_status,
   last_pipeline_age_min,
-  notes_count_24h,
+  notes_count_24_h,
   approvals_left,
   additions, 
   deletions,

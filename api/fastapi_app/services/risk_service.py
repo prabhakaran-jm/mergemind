@@ -121,7 +121,7 @@ class RiskService:
               mr_id,
               project_id,
               age_hours,
-              notes_count_24h,
+              notes_count_24_h,
               last_pipeline_status_is_fail,
               approvals_left,
               change_size_bucket,
@@ -197,7 +197,7 @@ class RiskService:
         try:
             sql = """
             SELECT 
-              id as mr_id,
+              mr_id,
               project_id,
               title,
               additions,
@@ -205,8 +205,8 @@ class RiskService:
               state,
               created_at,
               updated_at
-            FROM `mergemind_raw.merge_requests`
-            WHERE id = @mr_id
+            FROM `ai-accelerate-mergemind.mergemind.mr_activity_view`
+            WHERE mr_id = @mr_id
             LIMIT 1
             """
             

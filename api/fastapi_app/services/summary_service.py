@@ -49,10 +49,20 @@ class SummaryService:
                     "tests": ["Unable to suggest tests without MR data"]
                 }
             
-            # Get diff from GitLab
+            # Extract GitLab IID from web_url
+            gitlab_iid = self._extract_gitlab_iid(mr_data.get("web_url", ""))
+            if not gitlab_iid:
+                logger.warning(f"Could not extract GitLab IID from web_url for MR {mr_id}")
+                return {
+                    "summary": ["No diff content available for analysis"],
+                    "risks": ["Unable to assess risks without diff content"],
+                    "tests": ["Unable to suggest tests without diff content"]
+                }
+            
+            # Get diff from GitLab using the correct IID
             diff_content = await self.gitlab_client.get_merge_request_diff(
                 project_id=mr_data["project_id"],
-                mr_id=mr_id
+                mr_id=gitlab_iid
             )
             
             if not diff_content:
@@ -91,7 +101,7 @@ class SummaryService:
         try:
             sql = """
             SELECT 
-              id as mr_id,
+              mr_id,
               project_id,
               title,
               author_id,
@@ -101,10 +111,11 @@ class SummaryService:
               deletions,
               last_pipeline_status,
               last_pipeline_age_min,
-              notes_count_24h,
-              approvals_left
-            FROM `mergemind_raw.merge_requests`
-            WHERE id = @mr_id
+              notes_count_24_h,
+              approvals_left,
+              web_url
+            FROM `ai-accelerate-mergemind.mergemind.mr_activity_view`
+            WHERE mr_id = @mr_id
             LIMIT 1
             """
             
@@ -188,7 +199,7 @@ class SummaryService:
                 "deletions": mr_data["deletions"],
                 "last_pipeline_status": mr_data["last_pipeline_status"],
                 "last_pipeline_age_min": mr_data["last_pipeline_age_min"],
-                "notes_count_24h": mr_data["notes_count_24h"],
+                "notes_count_24_h": mr_data["notes_count_24_h"],
                 "approvals_left": mr_data["approvals_left"]
             }
             
@@ -207,6 +218,24 @@ class SummaryService:
             
         except Exception as e:
             logger.error(f"Failed to get MR context for {mr_id}: {e}")
+            return None
+    
+    def _extract_gitlab_iid(self, web_url: str) -> Optional[int]:
+        """Extract GitLab IID from web URL."""
+        try:
+            if not web_url:
+                return None
+            
+            # Extract the IID from URLs like:
+            # https://35.202.37.189.sslip.io/root/mergemind-integration-service/-/merge_requests/5
+            import re
+            match = re.search(r'/merge_requests/(\d+)', web_url)
+            if match:
+                return int(match.group(1))
+            
+            return None
+        except Exception as e:
+            logger.error(f"Failed to extract GitLab IID from URL {web_url}: {e}")
             return None
 
 

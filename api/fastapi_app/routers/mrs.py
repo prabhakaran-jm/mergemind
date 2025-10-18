@@ -50,7 +50,7 @@ async def list_merge_requests(
         
         sql = f"""
         SELECT 
-          id as mr_id,
+          mr_id,
           project_id,
           title,
           author_id,
@@ -60,7 +60,7 @@ async def list_merge_requests(
           state,
           TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), created_at, HOUR) AS age_hours,
           last_pipeline_status,
-          notes_count_24h,
+          notes_count_24_h,
           approvals_left,
           additions,
           deletions,
@@ -69,9 +69,9 @@ async def list_merge_requests(
           web_url,
           merged_at,
           closed_at
-        FROM `mergemind_raw.merge_requests`
+        FROM `ai-accelerate-mergemind.mergemind.mr_activity_view`
         WHERE {where_clause}
-        ORDER BY id DESC
+        ORDER BY mr_id DESC
         LIMIT @limit
         """
         
@@ -98,7 +98,7 @@ async def list_merge_requests(
                 "risk_score": risk_result.get("combined_score", risk_result.get("score", 0)),
                 "state": row["state"],
                 "pipeline_status": row["last_pipeline_status"],
-                "notes_count_24h": row["notes_count_24h"],
+                "notes_count_24_h": row["notes_count_24_h"],
                 "approvals_left": row["approvals_left"],
                 "additions": row["additions"],
                 "deletions": row["deletions"],
@@ -141,7 +141,7 @@ async def get_top_blockers(
     try:
         sql = """
         SELECT 
-          id as mr_id,
+          mr_id,
           project_id,
           title,
           author_id,
@@ -151,7 +151,7 @@ async def get_top_blockers(
           state,
           TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), created_at, HOUR) AS age_hours,
           last_pipeline_status,
-          notes_count_24h,
+          notes_count_24_h,
           approvals_left,
           additions,
           deletions,
@@ -160,7 +160,7 @@ async def get_top_blockers(
           web_url,
           merged_at,
           closed_at
-        FROM `mergemind_raw.merge_requests`
+        FROM `ai-accelerate-mergemind.mergemind.mr_activity_view`
         WHERE state = 'opened'
         ORDER BY age_hours DESC
         LIMIT @limit
@@ -189,7 +189,7 @@ async def get_top_blockers(
                 "blocking_reason": f"Open for {row['age_hours']} hours",
                 "state": row["state"],
                 "pipeline_status": row["last_pipeline_status"],
-                "notes_count_24h": row["notes_count_24h"],
+                "notes_count_24_h": row["notes_count_24_h"],
                 "approvals_left": row["approvals_left"],
                 "additions": row["additions"],
                 "deletions": row["deletions"],

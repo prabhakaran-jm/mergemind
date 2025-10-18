@@ -11,7 +11,7 @@ WITH base AS (
     additions,
     deletions,
     last_pipeline_status,
-    notes_count_24h,
+    notes_count_24_h,
     approvals_left,
     work_in_progress,
     labels,
@@ -23,7 +23,7 @@ SELECT
   mr_id, 
   project_id,
   age_hours,
-  notes_count_24h,
+  notes_count_24_h,
   last_pipeline_status = 'failed' AS last_pipeline_status_is_fail,
   approvals_left,
   

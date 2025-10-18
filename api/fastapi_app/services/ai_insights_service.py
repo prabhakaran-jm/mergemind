@@ -70,16 +70,25 @@ class AIInsightsService:
                     "data_source": "fallback"
                 }
             
-            # 2. Generate AI insights using Gemini
+            # 2. Get diff content from GitLab for comprehensive analysis
+            diff_content = await self._get_diff_content(mr_data)
+            if diff_content:
+                mr_data["diff_content"] = diff_content
+                mr_data["has_diff_content"] = True
+            else:
+                mr_data["has_diff_content"] = False
+                logger.warning(f"No diff content available for MR {mr_id}")
+            
+            # 3. Generate AI insights using Gemini
             ai_insights = await self._generate_ai_insights(mr_data)
             
-            # 3. Generate recommendations
+            # 4. Generate recommendations
             recommendations = await self._generate_recommendations(mr_data, ai_insights)
             
-            # 4. Generate trend analysis
+            # 5. Generate trend analysis
             trends = await self._generate_trend_analysis(mr_data)
             
-            # 5. Generate predictive insights
+            # 6. Generate predictive insights
             predictions = await self._generate_predictive_insights(mr_data)
             
             return {
@@ -89,7 +98,7 @@ class AIInsightsService:
                 "recommendations": recommendations,
                 "trends": trends,
                 "predictions": predictions,
-                "data_freshness": mr_data.get("data_freshness"),
+                "data_freshness": mr_data.get("data_freshness").isoformat() if mr_data.get("data_freshness") and hasattr(mr_data.get("data_freshness"), 'isoformat') else str(mr_data.get("data_freshness", "")),
                 "confidence_score": self._calculate_confidence_score(mr_data)
             }
             
@@ -103,18 +112,18 @@ class AIInsightsService:
             # First try to get basic MR data from mr_activity_view
             basic_query = f"""
             SELECT 
-                id as mr_id,
+                mr_id,
                 project_id,
                 title,
                 author_id,
                 state,
                 last_pipeline_status,
                 last_pipeline_age_min,
-                notes_count_24h,
+                notes_count_24_h,
                 approvals_left,
                 additions,
                 deletions,
-                TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), created_at, HOUR) AS age_hours,
+                age_hours,
                 source_branch,
                 target_branch,
                 web_url,
@@ -126,15 +135,14 @@ class AIInsightsService:
                 work_in_progress,
                 labels,
                 CURRENT_TIMESTAMP() as data_freshness
-            FROM `{self.project_id}.mergemind_raw.merge_requests`
-            WHERE id = {mr_id}
+            FROM `{self.project_id}.mergemind.mr_activity_view`
+            WHERE mr_id = {mr_id}
             """
             
-            query_job = self.bq_client.query(basic_query)
-            results = query_job.result()
+            results = self.bq_client.query(basic_query)
             
-            for row in results:
-                mr_data = dict(row)
+            if results:
+                mr_data = results[0]
                 
                 # Add default values for missing fields
                 mr_data.update({
@@ -147,6 +155,7 @@ class AIInsightsService:
                     'co_reviewers': []
                 })
                 
+                logger.info(f"Successfully gathered MR data for {mr_id}")
                 return mr_data
                 
             # If no data found, return None
@@ -167,7 +176,18 @@ class AIInsightsService:
             prompt = f"""
             As an AI code review expert, analyze this merge request data and provide comprehensive insights:
             
-            {json.dumps(context, indent=2)}
+            {json.dumps(context, indent=2, default=self._json_serializer)}
+            """
+            
+            # Add diff content if available
+            if mr_data.get("has_diff_content") and mr_data.get("diff_content"):
+                prompt += f"""
+            
+            Code Changes (Diff):
+            {mr_data["diff_content"][:2000]}  # Limit to first 2000 chars to avoid token limits
+            """
+            
+            prompt += """
             
             Please provide:
             1. Code Quality Assessment (architecture, patterns, best practices)
@@ -180,7 +200,7 @@ class AIInsightsService:
             Format your response as structured JSON with clear categories and actionable insights.
             """
             
-            response = await self.vertex_client.generate_text(prompt)
+            response = self.vertex_client.generate_text(prompt)
             
             # Parse and structure the response
             insights = self._parse_gemini_response(response)
@@ -281,7 +301,7 @@ class AIInsightsService:
                     AVG(risk_score_rule) as avg_risk_score
                 FROM `{self.project_id}.mergemind.cycle_time_view`
                 WHERE project_id = {project_id}
-                AND created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
+                AND DATE(created_at) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
                 GROUP BY DATE(created_at)
                 ORDER BY date DESC
             ),
@@ -294,7 +314,7 @@ class AIInsightsService:
                 FROM `{self.project_id}.mergemind.cycle_time_view` c
                 JOIN `{self.project_id}.mergemind.mr_activity_view` a ON c.mr_id = a.mr_id
                 WHERE a.author_id = {author_id}
-                AND created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
+                AND DATE(created_at) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
                 GROUP BY DATE(created_at)
                 ORDER BY date DESC
             )
@@ -331,7 +351,7 @@ class AIInsightsService:
             prompt = f"""
             Based on this merge request data and historical patterns, provide predictive insights:
             
-            {json.dumps(context, indent=2)}
+            {json.dumps(context, indent=2, default=self._json_serializer)}
             
             Predict:
             1. Estimated time to merge (based on similar MRs)
@@ -343,7 +363,7 @@ class AIInsightsService:
             Provide confidence levels for each prediction.
             """
             
-            response = await self.vertex_client.generate_text(prompt)
+            response = self.vertex_client.generate_text(prompt)
             predictions = self._parse_gemini_response(response)
             
             return predictions
@@ -372,7 +392,7 @@ class AIInsightsService:
                 "pipeline_status": mr_data.get("last_pipeline_status"),
                 "pipeline_age_min": mr_data.get("last_pipeline_age_min"),
                 "approvals_left": mr_data.get("approvals_left"),
-                "notes_count_24h": mr_data.get("notes_count_24h")
+                "notes_count_24_h": mr_data.get("notes_count_24_h")
             },
             "historical_context": {
                 "cycle_time_hours": mr_data.get("cycle_time_hours"),
@@ -423,15 +443,71 @@ class AIInsightsService:
             # Adjust based on data freshness
             data_freshness = mr_data.get("data_freshness")
             if data_freshness:
-                freshness_hours = (datetime.utcnow() - data_freshness).total_seconds() / 3600
-                freshness_factor = max(0.5, 1.0 - (freshness_hours / 24))  # Decay over 24 hours
-                completeness *= freshness_factor
+                try:
+                    # Handle both datetime objects and ISO strings
+                    if isinstance(data_freshness, str):
+                        from datetime import datetime
+                        data_freshness = datetime.fromisoformat(data_freshness.replace('Z', '+00:00'))
+                    
+                    freshness_hours = (datetime.utcnow() - data_freshness).total_seconds() / 3600
+                    freshness_factor = max(0.5, 1.0 - (freshness_hours / 24))  # Decay over 24 hours
+                    completeness *= freshness_factor
+                except Exception as e:
+                    logger.warning(f"Failed to process data freshness: {e}")
             
             return round(completeness, 2)
             
         except Exception as e:
             logger.error(f"Failed to calculate confidence score: {e}")
             return 0.5  # Default moderate confidence
+    
+    async def _get_diff_content(self, mr_data: Dict[str, Any]) -> Optional[str]:
+        """Get diff content from GitLab for comprehensive analysis."""
+        try:
+            # Extract GitLab IID from web_url
+            gitlab_iid = self._extract_gitlab_iid(mr_data.get("web_url", ""))
+            if not gitlab_iid:
+                logger.warning(f"Could not extract GitLab IID from web_url")
+                return None
+            
+            # Get diff from GitLab using the correct IID
+            diff_content = await self.gitlab_client.get_merge_request_diff(
+                project_id=mr_data["project_id"],
+                mr_id=gitlab_iid
+            )
+            
+            return diff_content
+            
+        except Exception as e:
+            logger.error(f"Failed to get diff content: {e}")
+            return None
+    
+    def _extract_gitlab_iid(self, web_url: str) -> Optional[int]:
+        """Extract GitLab IID from web URL."""
+        try:
+            if not web_url:
+                return None
+            
+            # Extract the IID from URLs like:
+            # https://35.202.37.189.sslip.io/root/mergemind-integration-service/-/merge_requests/5
+            import re
+            match = re.search(r'/merge_requests/(\d+)', web_url)
+            if match:
+                return int(match.group(1))
+            
+            return None
+        except Exception as e:
+            logger.error(f"Failed to extract GitLab IID from URL {web_url}: {e}")
+            return None
+    
+    def _json_serializer(self, obj):
+        """Custom JSON serializer to handle datetime objects."""
+        if hasattr(obj, 'isoformat'):
+            return obj.isoformat()
+        elif hasattr(obj, '__dict__'):
+            return obj.__dict__
+        else:
+            return str(obj)
 
 
 # Create service instance

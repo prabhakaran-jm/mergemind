@@ -148,7 +148,7 @@ class ReviewerService:
         try:
             sql = """
             SELECT 
-              id as mr_id,
+              mr_id,
               project_id,
               title,
               additions,
@@ -156,8 +156,8 @@ class ReviewerService:
               state,
               created_at,
               updated_at
-            FROM `mergemind_raw.merge_requests`
-            WHERE id = @mr_id
+            FROM `ai-accelerate-mergemind.mergemind.mr_activity_view`
+            WHERE mr_id = @mr_id
             LIMIT 1
             """
             
@@ -274,7 +274,7 @@ class ReviewerService:
               created_at,
               state,
               approvals_left,
-              notes_count_24h
+              notes_count_24_h
             FROM `mergemind.mr_activity_view`
             WHERE mr_id IN (
               SELECT DISTINCT mr_id 

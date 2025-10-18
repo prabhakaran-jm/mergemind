@@ -512,6 +512,45 @@ def _get_merge_requests(project_id: int, updated_after: Optional[datetime] = Non
     return all_mrs
 
 
+def _safe_extract_labels(labels_data):
+    """Safely extract labels from various GitLab API response formats."""
+    try:
+        if not labels_data:
+            return json.dumps([])
+        
+        # Handle different label formats
+        if isinstance(labels_data, str):
+            # If it's already a string, try to parse it
+            try:
+                parsed = json.loads(labels_data)
+                if isinstance(parsed, list):
+                    return json.dumps([str(label) for label in parsed])
+                else:
+                    return json.dumps([str(labels_data)])
+            except json.JSONDecodeError:
+                return json.dumps([str(labels_data)])
+        
+        elif isinstance(labels_data, list):
+            # Handle list of objects or strings
+            label_names = []
+            for label in labels_data:
+                if isinstance(label, dict) and "title" in label:
+                    label_names.append(label["title"])
+                elif isinstance(label, str):
+                    label_names.append(label)
+                else:
+                    label_names.append(str(label))
+            return json.dumps(label_names)
+        
+        else:
+            # Fallback for any other type
+            return json.dumps([str(labels_data)])
+            
+    except Exception as e:
+        logger.warning(f"Error extracting labels: {e}, using empty list")
+        return json.dumps([])
+
+
 def _enhance_merge_request_data(mr: Dict[str, Any], project_id: int, config: Dict[str, Any]) -> Dict[str, Any]:
     """Enhance merge request data with additional fields from GitLab API."""
     mr_id = mr["iid"]  # GitLab uses iid for API calls
@@ -538,7 +577,7 @@ def _enhance_merge_request_data(mr: Dict[str, Any], project_id: int, config: Dic
         "notes_count_24h": notes_count,
         "approvals_left": approval_data.get("approvals_left", 0),
         "work_in_progress": mr.get("work_in_progress", False),
-        "labels": json.dumps([label["title"] for label in mr.get("labels", [])]),
+        "labels": _safe_extract_labels(mr.get("labels", [])),
         "milestone_id": mr.get("milestone", {}).get("id") if mr.get("milestone") else None,
         "merge_user_id": mr.get("merge_user", {}).get("id") if mr.get("merge_user") else None,
         "merge_commit_sha": mr.get("merge_commit_sha"),

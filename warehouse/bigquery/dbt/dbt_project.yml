@@ -37,6 +37,9 @@ models:
     merge_risk_features:
       +materialized: view
 
+# Disable packages to avoid permission issues
+packages: []
+
 # Configuring seeds
 seeds:
   mergemind:

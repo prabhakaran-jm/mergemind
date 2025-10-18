@@ -17,8 +17,8 @@ class GitLabClient:
     def __init__(self):
         """Initialize GitLab client."""
         from services.config import settings
-        self.base_url = settings.gitlab_base_url
-        self.token = settings.gitlab_token
+        self.base_url = settings.gitlab_base_url.strip() if settings.gitlab_base_url else None
+        self.token = settings.gitlab_token.strip() if settings.gitlab_token else None
         
         if not self.token:
             logger.warning("GITLAB_TOKEN not provided - GitLab operations will be limited")
