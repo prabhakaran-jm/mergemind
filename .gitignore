@@ -81,8 +81,12 @@ service-account-key.json
 *.key
 *.pem
 
-# Docker
-.dockerignore
+# Archive files
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
 
 # Temporary files
 *.tmp
@@ -136,6 +140,12 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 
+# Terraform variable files with sensitive data
+deploy/terraform/terraform.tfvars
+deploy/terraform/dev.tfvars
+deploy/terraform/prod.tfvars
+deploy/terraform/staging.tfvars
+
 # GitLab Demo Resources - Sensitive files
 infra/gitlab/terraform/terraform.tfvars
 infra/gitlab/terraform/demo-resources.tfplan
@@ -187,7 +197,7 @@ test_filtering.py
 test_config_fix.py
 
 # Docker build artifacts
-.dockerignore
+# Note: .dockerignore should NOT be ignored - it's needed for Docker builds
 
 # Jupyter notebooks checkpoints
 .ipynb_checkpoints/

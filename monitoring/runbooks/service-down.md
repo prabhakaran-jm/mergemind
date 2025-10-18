@@ -138,6 +138,6 @@ curl -f https://your-gitlab.com/api/v4/user
 - [ ] Test recovery procedures
 
 ## Related Documentation
-- [Deployment Guide](../docs/DEPLOYMENT.md)
+- [Production Deployment Guide](../docs/PRODUCTION_DEPLOYMENT.md)
 - [Monitoring Guide](../docs/MONITORING.md)
 - [Troubleshooting Guide](../docs/TROUBLESHOOTING.md)

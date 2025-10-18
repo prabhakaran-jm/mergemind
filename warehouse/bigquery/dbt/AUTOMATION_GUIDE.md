@@ -82,9 +82,9 @@ warehouse/bigquery/dbt/
 ### Environment Variables
 Make sure `dbt.env` contains:
 ```
-GCP_PROJECT_ID=ai-accelerate-mergemind
-BQ_DATASET_RAW=mergemind_raw
-BQ_DATASET_MODELED=mergemind
+GCP_PROJECT_ID=${GCP_PROJECT_ID:-"$(gcloud config get-value project)"}
+BQ_DATASET_RAW=${BQ_DATASET_RAW:-mergemind_raw}
+BQ_DATASET_MODELED=${BQ_DATASET_MODELED:-mergemind}
 ```
 
 ## Next Steps

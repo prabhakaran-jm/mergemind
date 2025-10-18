@@ -91,22 +91,22 @@ At the core of MergeMind is a sophisticated AI engine built on Google Vertex AI 
 3. **Install dependencies**
    ```bash
    # Install API dependencies
-   cd api/fastapi_app
+   cd app/backend/fastapi_app
    pip install -r requirements.txt
    
    # Install UI dependencies
-   cd ../../ui/react_app
+   cd ../../frontend/web
    npm install
    ```
 
 4. **Start services**
    ```bash
    # Start API (terminal 1)
-   cd api/fastapi_app
+   cd app/backend/fastapi_app
    uvicorn main:app --reload --port 8080
    
    # Start UI (terminal 2)
-   cd ui/react_app
+   cd app/frontend/web
    npm run dev
    ```
 
@@ -212,7 +212,7 @@ docker-compose ps
 #### 1. API Setup
 
 ```bash
-cd api/fastapi_app
+cd app/backend/fastapi_app
 
 # Create virtual environment
 python -m venv venv
@@ -231,7 +231,7 @@ uvicorn main:app --reload --port 8080
 #### 2. UI Setup
 
 ```bash
-cd ui/react_app
+cd app/frontend/web
 
 # Install dependencies
 npm install
@@ -485,10 +485,10 @@ For complete API documentation, see [API Reference](docs/API_REFERENCE.md).
 
 ```bash
 # Build and push Docker images
-docker build -t gcr.io/your-project/mergemind-api:latest api/fastapi_app/
+docker build -t gcr.io/your-project/mergemind-api:latest app/backend/
 docker push gcr.io/your-project/mergemind-api:latest
 
-docker build -t gcr.io/your-project/mergemind-ui:latest ui/react_app/
+docker build -t gcr.io/your-project/mergemind-ui:latest app/frontend/
 docker push gcr.io/your-project/mergemind-ui:latest
 
 # Deploy to Cloud Run
@@ -528,7 +528,7 @@ helm install mergemind ./helm/mergemind \
   --set gitlab.baseUrl=https://your-gitlab.com
 ```
 
-For detailed deployment instructions, see [Deployment Guide](docs/DEPLOYMENT.md).
+For detailed deployment instructions, see [Production Deployment Guide](docs/PRODUCTION_DEPLOYMENT.md).
 
 ## 📊 Monitoring
 
@@ -563,7 +563,7 @@ Configure alerts for:
 - BigQuery quota exceeded
 - AI service failures
 
-For comprehensive monitoring setup, see [Monitoring Guide](docs/MONITORING.md).
+For comprehensive monitoring setup, see the monitoring folder documentation.
 
 ## 🔒 Security
 
@@ -583,7 +583,7 @@ For comprehensive monitoring setup, see [Monitoring Guide](docs/MONITORING.md).
 - Security incident response plan
 - Regular security audits
 
-For detailed security information, see [Security Guide](docs/SECURITY.md).
+For detailed security information, see the monitoring and infrastructure documentation.
 
 ## 🧪 Testing
 
@@ -591,7 +591,7 @@ For detailed security information, see [Security Guide](docs/SECURITY.md).
 
 ```bash
 # API tests
-cd api/fastapi_app
+cd app/backend/fastapi_app
 python run_tests.py
 
 # Run specific test types
@@ -602,7 +602,7 @@ python run_tests.py --type integration
 python run_tests.py --coverage
 
 # UI tests
-cd ui/react_app
+cd app/frontend/web
 npm test
 npm run test:coverage
 ```

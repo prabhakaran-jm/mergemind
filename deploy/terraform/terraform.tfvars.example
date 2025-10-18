@@ -1,0 +1,54 @@
+# Example Terraform variables for MergeMind GCP Infrastructure
+# Copy this file to terraform.tfvars and customize the values
+
+# Project Configuration
+project_id = "ai-accelerate-mergemind"
+region     = "us-central1"
+environment = "dev"
+
+# BigQuery Configuration
+bigquery_location = "US"
+bq_dataset_raw = "mergemind_raw"
+bq_dataset_modeled = "mergemind"
+
+# Vertex AI Configuration
+enable_vertex_ai     = true
+vertex_ai_location   = "us-central1"
+vertex_ai_model      = "gemini-2.0-flash-exp"
+
+# BigQuery Configuration
+enable_bigquery      = true
+bigquery_slot_capacity = 100
+
+# Storage Configuration
+enable_storage       = true
+storage_class        = "STANDARD"
+retention_days       = 90
+
+# Networking Configuration
+enable_networking    = true
+
+# Monitoring Configuration
+enable_monitoring    = true
+enable_logging       = true
+
+# Security Configuration
+enable_security      = true
+gitlab_token_secret_name = "gitlab-token"
+vertex_ai_key_secret_name = "vertex-ai-key"
+
+# Additional Tags
+tags = {
+  "project"     = "mergemind"
+  "managed-by"  = "terraform"
+  "environment" = "dev"
+  "team"        = "platform"
+  "cost-center" = "engineering"
+}
+
+# Authentication Token for dbt Trigger
+dbt_trigger_auth_token = "your-secure-token-here"
+
+# GitHub Configuration
+github_owner = "your-github-username"
+github_repo = "your-repository-name"

@@ -20,9 +20,9 @@ COPY warehouse/bigquery/dbt/ ./warehouse/bigquery/dbt/
 RUN cd warehouse/bigquery/dbt && dbt deps
 
 # Set environment variables
-ENV GCP_PROJECT_ID=ai-accelerate-mergemind
-ENV BQ_DATASET_RAW=mergemind_raw
-ENV BQ_DATASET_MODELED=mergemind
+ENV GCP_PROJECT_ID=${GCP_PROJECT_ID}
+ENV BQ_DATASET_RAW=${BQ_DATASET_RAW:-mergemind_raw}
+ENV BQ_DATASET_MODELED=${BQ_DATASET_MODELED:-mergemind}
 
 # Run dbt transformations
 CMD ["sh", "-c", "cd warehouse/bigquery/dbt && dbt run --profiles-dir . && dbt test --profiles-dir ."]

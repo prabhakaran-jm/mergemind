@@ -4,7 +4,7 @@
 
 set -e
 
-PROJECT_ID="ai-accelerate-mergemind"
+PROJECT_ID=${GCP_PROJECT_ID:-"$(gcloud config get-value project)"}
 TRIGGER_NAME="dbt-transform-trigger"
 
 echo "🚀 Setting up Cloud Build Triggers for dbt automation..."

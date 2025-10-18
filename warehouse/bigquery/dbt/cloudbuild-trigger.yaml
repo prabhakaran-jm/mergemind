@@ -31,6 +31,6 @@ timeout: '1200s'
 
 # Substitutions for flexibility
 substitutions:
-  _PROJECT_ID: 'ai-accelerate-mergemind'
-  _DATASET_RAW: 'mergemind_raw'
-  _DATASET_MODELED: 'mergemind'
+  _PROJECT_ID: '{{ env_var("GCP_PROJECT_ID") }}'
+  _DATASET_RAW: '{{ env_var("BQ_DATASET_RAW", "mergemind_raw") }}'
+  _DATASET_MODELED: '{{ env_var("BQ_DATASET_MODELED", "mergemind") }}'

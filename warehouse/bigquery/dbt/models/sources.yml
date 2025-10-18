@@ -3,8 +3,8 @@ version: 2
 sources:
   - name: raw
     description: "Raw GitLab data from Fivetran connector"
-    database: ai-accelerate-mergemind
-    schema: mergemind_raw
+    database: "{{ env_var('GCP_PROJECT_ID') }}"
+    schema: "{{ env_var('BQ_DATASET_RAW', 'mergemind_raw') }}"
     tables:
       - name: merge_requests
         description: "Raw merge requests data from GitLab"
