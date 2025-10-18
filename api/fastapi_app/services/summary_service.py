@@ -197,6 +197,7 @@ class SummaryService:
                 "created_at": mr_data["created_at"],
                 "additions": mr_data["additions"],
                 "deletions": mr_data["deletions"],
+                "web_url": mr_data.get("web_url", ""),
                 "last_pipeline_status": mr_data["last_pipeline_status"],
                 "last_pipeline_age_min": mr_data["last_pipeline_age_min"],
                 "notes_count_24_h": mr_data["notes_count_24_h"],
