@@ -7,8 +7,9 @@ with Gemini AI analysis. It provides enhanced insights beyond basic summaries.
 
 import logging
 from typing import Dict, Any, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date, timezone
 import json
+import re
 
 from google.cloud import bigquery
 from .vertex_client import vertex_client
@@ -44,7 +45,7 @@ class AIInsightsService:
                 # Return fallback insights if no data found
                 return {
                     "mr_id": mr_id,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                     "ai_insights": {
                         "summary": f"AI analysis for merge request {mr_id}",
                         "risk_assessment": "Unable to assess risk - limited data available",
@@ -113,12 +114,12 @@ class AIInsightsService:
             
             return {
                 "mr_id": mr_id,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "ai_insights": ai_insights,
                 "recommendations": recommendations,
                 "trends": trends,
                 "predictions": predictions,
-                "data_freshness": mr_data.get("data_freshness").isoformat() if mr_data.get("data_freshness") and hasattr(mr_data.get("data_freshness"), 'isoformat') else str(mr_data.get("data_freshness", "")),
+                "data_freshness": self._json_serializer(mr_data.get("data_freshness")),
                 "confidence_score": self._calculate_confidence_score(mr_data)
             }
             
@@ -194,18 +195,14 @@ class AIInsightsService:
             
             # Generate insights using Gemini
             prompt = f"""
-            As an AI code review expert, analyze this merge request data and provide comprehensive insights:
+            As an AI code review expert, analyze this merge request data and provide comprehensive insights: 
             
             {json.dumps(context, indent=2, default=self._json_serializer)}
             """
             
             # Add diff content if available
             if mr_data.get("has_diff_content") and mr_data.get("diff_content"):
-                prompt += f"""
-            
-            Code Changes (Diff):
-            {mr_data["diff_content"][:2000]}  # Limit to first 2000 chars to avoid token limits
-            """
+                prompt += f"\n\nCode Changes (Diff):\n{mr_data['diff_content'][:2000]}  # Limit to first 2000 chars to avoid token limits\n"
             
             prompt += """
             
@@ -236,6 +233,10 @@ class AIInsightsService:
         try:
             recommendations = []
 
+            logger.info(f"Generating recommendations with MR data keys: {list(mr_data.keys())}")
+            logger.info(f"MR data values - risk_label: {mr_data.get('risk_label')}, pipeline: {mr_data.get('last_pipeline_status')}, age_hours: {mr_data.get('age_hours')}, change_size: {mr_data.get('change_size_bucket')}")
+            logger.info(f"AI insights type: {type(ai_insights)}, count: {len(ai_insights) if isinstance(ai_insights, list) else 'N/A'}")
+
             # Rule-based recommendations
             if mr_data.get("risk_label") == "High":
                 recommendations.append({
@@ -249,7 +250,7 @@ class AIInsightsService:
                         "Consider breaking into smaller changes"
                     ]
                 })
-
+            
             if mr_data.get("last_pipeline_status") == "failed":
                 recommendations.append({
                     "type": "pipeline_fix",
@@ -262,7 +263,7 @@ class AIInsightsService:
                         "Verify build configuration"
                     ]
                 })
-
+            
             if mr_data.get("age_hours", 0) > 72:
                 recommendations.append({
                     "type": "stale_mr",
@@ -275,7 +276,7 @@ class AIInsightsService:
                         "Consider closing if abandoned"
                     ]
                 })
-
+            
             if mr_data.get("change_size_bucket", "") in ["L", "XL"]:
                 recommendations.append({
                     "type": "large_change",
@@ -288,14 +289,20 @@ class AIInsightsService:
                         "Add detailed documentation"
                     ]
                 })
-
+            
             # AI-enhanced recommendations
-            if ai_insights and not isinstance(ai_insights, dict) and not any(i.get("type") == "error" for i in ai_insights):
-                ai_recommendations = self._extract_ai_recommendations(ai_insights)
-                recommendations.extend(ai_recommendations)
+            # Only skip AI recommendations if ai_insights is a dict (error case) or empty
+            if ai_insights and not isinstance(ai_insights, dict):
+                # Process AI insights even if some have error type - just filter them out
+                valid_insights = [i for i in ai_insights if i.get("type") != "error"]
+                if valid_insights:
+                    ai_recommendations = self._extract_ai_recommendations(valid_insights)
+                    recommendations.extend(ai_recommendations)
+                    logger.info(f"Added {len(ai_recommendations)} AI-enhanced recommendations")
 
+            logger.info(f"Total recommendations generated: {len(recommendations)}")
             return recommendations
-
+            
         except Exception as e:
             logger.error(f"Failed to generate recommendations: {e}")
             return []
@@ -305,29 +312,31 @@ class AIInsightsService:
         try:
             project_id = mr_data.get("project_id")
             author_id = mr_data.get("author_id")
-
+            
             trend_query = f"""
             WITH project_trends AS (
-                SELECT
+                SELECT 
                     'project' as scope,
-                    DATE(created_at) as date,
+                    DATE(c.created_at) as date,
                     COUNT(*) as mr_count,
-                    AVG(cycle_time_hours) as avg_cycle_time,
-                    AVG(risk_score) as avg_risk_score
-                FROM `{self.project_id}.mergemind.cycle_time_view`
-                WHERE project_id = {project_id}
-                AND DATE(created_at) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
-                GROUP BY DATE(created_at)
+                    AVG(c.cycle_time_hours) as avg_cycle_time,
+                    AVG(f.risk_score_rule) as avg_risk_score
+                FROM `{self.project_id}.mergemind.cycle_time_view` c
+                JOIN `{self.project_id}.mergemind.merge_risk_features` f ON c.mr_id = f.mr_id
+                WHERE c.project_id = {project_id}
+                AND DATE(c.created_at) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
+                GROUP BY DATE(c.created_at)
             ),
             author_trends AS (
-                SELECT
+                SELECT 
                     'author' as scope,
                     DATE(c.created_at) as date,
                     COUNT(*) as mr_count,
                     AVG(c.cycle_time_hours) as avg_cycle_time,
-                    AVG(c.risk_score) as avg_risk_score
+                    AVG(f.risk_score_rule) as avg_risk_score
                 FROM `{self.project_id}.mergemind.cycle_time_view` c
                 JOIN `{self.project_id}.mergemind.mr_activity_view` a ON c.mr_id = a.mr_id
+                JOIN `{self.project_id}.mergemind.merge_risk_features` f ON c.mr_id = f.mr_id
                 WHERE a.author_id = {author_id}
                 AND DATE(c.created_at) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
                 GROUP BY DATE(c.created_at)
@@ -336,10 +345,9 @@ class AIInsightsService:
             UNION ALL
             SELECT 'author' as scope, ARRAY_AGG(STRUCT(date, mr_count, avg_cycle_time, avg_risk_score)) as trends FROM author_trends
             """
-
-            query_job = self.bq_client.query(trend_query)
-            results = query_job
-
+            
+            results = self.bq_client.query(trend_query)
+            
             trends = {
                 "project": {"trends": []},
                 "author": {"trends": []}
@@ -347,11 +355,15 @@ class AIInsightsService:
 
             if results:
                 for row in results:
-                    if row.scope and row.trends:
-                        trends[row.scope] = {"trends": row.trends}
+                    # BigQuery client returns dictionaries, not row objects
+                    scope = row.get('scope') if isinstance(row, dict) else row.scope
+                    trends_data = row.get('trends') if isinstance(row, dict) else row.trends
 
+                    if scope and trends_data:
+                        trends[scope] = {"trends": [self._json_serializer(trend) for trend in trends_data]}
+            
             return trends
-
+            
         except Exception as e:
             logger.error(f"Failed to generate trend analysis: {e}")
             return {"error": f"Trend analysis failed: {str(e)}"}
@@ -383,7 +395,7 @@ class AIInsightsService:
             return {
                 "raw_response": response,
                 "structured": True,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
             
         except Exception as e:
@@ -422,30 +434,30 @@ class AIInsightsService:
         """Parse Gemini response into structured format."""
         try:
             # Try to extract JSON from markdown code blocks
+            json_str = None
             if '```json' in response:
-                json_start = response.find('```json') + 7
-                json_end = response.find('```', json_start)
-                if json_end > json_start:
-                    json_str = response[json_start:json_end].strip()
-                else:
-                    json_str = response[json_start:].strip()
-                
+                match = re.search(r'```json\s*(\{.*?\})\s*```', response, re.DOTALL)
+                if match:
+                    json_str = match.group(1)
+            elif response.strip().startswith('{'):
+                json_str = response.strip()
+
+            if json_str:
                 try:
+                    # Attempt to parse the extracted JSON string
                     parsed = json.loads(json_str)
                     return self._structure_ai_insights(parsed)
                 except json.JSONDecodeError as e:
-                    logger.warning(f"Failed to parse JSON from response: {e}")
-                    # Try to extract insights from the text even if JSON parsing fails
-                    return self._extract_insights_from_text(json_str)
-            
-            # Try to parse as direct JSON
-            elif response.strip().startswith('{'):
-                try:
-                    parsed = json.loads(response.strip())
-                    return self._structure_ai_insights(parsed)
-                except json.JSONDecodeError:
-                    pass
-            
+                    logger.warning(f"Failed to parse JSON from response: {e}. Trying to fix.")
+                    # Try to fix common JSON errors (e.g., unescaped quotes)
+                    fixed_json_str = re.sub(r'(?<!\\)"', r'\\"', json_str)
+                    try:
+                        parsed = json.loads(fixed_json_str)
+                        return self._structure_ai_insights(parsed)
+                    except json.JSONDecodeError:
+                        logger.error("Failed to parse JSON even after fixing quotes.")
+                        return self._extract_insights_from_text(json_str)
+
             # If not JSON, structure the text response
             return [{
                 "type": "general",
@@ -701,6 +713,45 @@ class AIInsightsService:
                         ]
                     })
 
+                elif insight_type == "general":
+                    # Handle general insights - create recommendations based on priority
+                    if priority == "high":
+                        recommendations.append({
+                            "type": "urgent_review",
+                            "priority": "high",
+                            "title": "Urgent Review Required",
+                            "description": insight.get("description", "AI analysis identified important concerns that require immediate attention."),
+                            "actions": [
+                                "Review the AI analysis findings carefully",
+                                "Address any critical issues identified",
+                                "Consult with team leads if needed"
+                            ]
+                        })
+                    elif priority == "medium":
+                        recommendations.append({
+                            "type": "standard_review",
+                            "priority": "medium",
+                            "title": "Standard Review Recommended",
+                            "description": insight.get("description", "AI analysis completed. A standard review is recommended to validate findings."),
+                            "actions": [
+                                "Review the merge request thoroughly",
+                                "Verify code quality and adherence to standards",
+                                "Check for potential improvements"
+                            ]
+                        })
+                    else:  # low priority
+                        recommendations.append({
+                            "type": "general_review",
+                            "priority": "low",
+                            "title": "General Code Review",
+                            "description": insight.get("description", "AI analysis completed. Consider a general code review to ensure quality."),
+                            "actions": [
+                                "Review code for correctness and best practices",
+                                "Check for potential bugs or edge cases",
+                                "Verify that functionality works as expected"
+                            ]
+                        })
+
         except Exception as e:
             logger.error(f"Failed to extract AI recommendations: {e}")
             recommendations.append({
@@ -734,10 +785,12 @@ class AIInsightsService:
                 try:
                     # Handle both datetime objects and ISO strings
                     if isinstance(data_freshness, str):
-                        from datetime import datetime
                         data_freshness = datetime.fromisoformat(data_freshness.replace('Z', '+00:00'))
                     
-                    freshness_hours = (datetime.utcnow() - data_freshness).total_seconds() / 3600
+                    if data_freshness.tzinfo is None:
+                        data_freshness = data_freshness.replace(tzinfo=timezone.utc)
+
+                    freshness_hours = (datetime.now(timezone.utc) - data_freshness).total_seconds() / 3600
                     freshness_factor = max(0.5, 1.0 - (freshness_hours / 24))  # Decay over 24 hours
                     completeness *= freshness_factor
                 except Exception as e:
@@ -779,7 +832,7 @@ class AIInsightsService:
             # Extract the IID from URLs like:
             # https://35.202.37.189.sslip.io/root/mergemind-integration-service/-/merge_requests/5
             import re
-            match = re.search(r'/merge_requests/(\d+)', web_url)
+            match = re.search(r'/merge_requests/(\\d+)', web_url)
             if match:
                 return int(match.group(1))
             
@@ -789,13 +842,23 @@ class AIInsightsService:
             return None
     
     def _json_serializer(self, obj):
-        """Custom JSON serializer to handle datetime objects."""
-        if hasattr(obj, 'isoformat'):
+        """Custom JSON serializer to handle datetime, date and other non-serializable objects."""
+        if isinstance(obj, (datetime, date)):
             return obj.isoformat()
-        elif hasattr(obj, '__dict__'):
-            return obj.__dict__
-        else:
+        if isinstance(obj, dict):
+            # Recursively serialize nested dictionaries
+            return {k: self._json_serializer(v) for k, v in obj.items()}
+        if isinstance(obj, (list, tuple)):
+            # Recursively serialize nested lists/tuples
+            return [self._json_serializer(item) for item in obj]
+        if hasattr(obj, 'to_dict'):
+            return obj.to_dict()
+        if isinstance(obj, bigquery.Row):
+            return dict(obj)
+        try:
             return str(obj)
+        except (TypeError, ValueError):
+            return None
 
 
 # Create service instance
