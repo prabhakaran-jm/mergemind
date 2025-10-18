@@ -1,10 +1,10 @@
 # MergeMind Architecture Documentation
 
-This directory contains comprehensive architecture diagrams for the MergeMind platform, created using PlantUML for detailed technical documentation.
+This directory contains comprehensive architecture diagrams for the MergeMind platform, created using Mermaid for detailed technical documentation.
 
 ## 📊 Architecture Diagrams
 
-### 1. [ARCHITECTURE_DIAGRAM.puml](ARCHITECTURE_DIAGRAM.puml)
+### 1. [ARCHITECTURE_DIAGRAM.mmd](ARCHITECTURE_DIAGRAM.mmd)
 **Complete System Architecture**
 
 This diagram shows the full system architecture including:
@@ -22,7 +22,7 @@ This diagram shows the full system architecture including:
 - Security and credential management
 - Production-ready infrastructure
 
-### 2. [DATA_FLOW_DIAGRAM.puml](DATA_FLOW_DIAGRAM.puml)
+### 2. [DATA_FLOW_DIAGRAM.mmd](DATA_FLOW_DIAGRAM.mmd)
 **Event-Driven Pipeline Flow**
 
 This diagram illustrates the complete data flow from GitLab events to user interface:
@@ -39,7 +39,7 @@ This diagram illustrates the complete data flow from GitLab events to user inter
 - Performance characteristics
 - Parallel processing paths
 
-### 3. [DEPLOYMENT_ARCHITECTURE.puml](DEPLOYMENT_ARCHITECTURE.puml)
+### 3. [DEPLOYMENT_ARCHITECTURE.mmd](DEPLOYMENT_ARCHITECTURE.mmd)
 **Production Deployment Structure**
 
 This diagram shows the production deployment architecture:
@@ -59,31 +59,36 @@ This diagram shows the production deployment architecture:
 
 ## 🛠️ How to View These Diagrams
 
-### Option 1: Online PlantUML Viewer
-1. Copy the content of any `.puml` file
-2. Go to [PlantUML Online Server](http://www.plantuml.com/plantuml/uml/)
+### Option 1: GitHub Native Rendering
+1. Open any `.mmd` file directly on GitHub
+2. GitHub automatically renders Mermaid diagrams
+3. No additional tools required
+
+### Option 2: Online Mermaid Editor
+1. Copy the content of any `.mmd` file
+2. Go to [Mermaid Live Editor](https://mermaid.live/)
 3. Paste the content and view the rendered diagram
 
-### Option 2: VS Code Extension
-1. Install the "PlantUML" extension in VS Code
-2. Open any `.puml` file
-3. Use `Ctrl+Shift+P` → "PlantUML: Preview Current Diagram"
+### Option 3: VS Code Extension
+1. Install the "Mermaid Preview" extension in VS Code
+2. Open any `.mmd` file
+3. Use `Ctrl+Shift+P` → "Mermaid Preview: Open Preview"
 
-### Option 3: Local PlantUML Installation
+### Option 4: Local Mermaid Installation
 ```bash
-# Install PlantUML
-npm install -g node-plantuml
+# Install Mermaid CLI
+npm install -g @mermaid-js/mermaid-cli
 
-# Generate PNG from PUML
-puml generate ARCHITECTURE_DIAGRAM.puml --png
+# Generate PNG from MMD
+mmdc -i ARCHITECTURE_DIAGRAM.mmd -o ARCHITECTURE_DIAGRAM.png
 
-# Generate SVG from PUML
-puml generate ARCHITECTURE_DIAGRAM.puml --svg
+# Generate SVG from MMD
+mmdc -i ARCHITECTURE_DIAGRAM.mmd -o ARCHITECTURE_DIAGRAM.svg
 ```
 
 ### Option 4: IntelliJ IDEA Plugin
-1. Install "PlantUML integration" plugin
-2. Open `.puml` files directly in IntelliJ
+1. Install "Mermaid" plugin
+2. Open `.mmd` files directly in IntelliJ
 3. Diagrams render automatically
 
 ## 📋 Diagram Maintenance

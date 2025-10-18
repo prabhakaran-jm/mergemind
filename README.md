@@ -222,9 +222,9 @@ graph TB
 ### Detailed Architecture Diagrams
 
 For comprehensive architecture documentation, see:
-- [Architecture Diagram](docs/ARCHITECTURE_DIAGRAM.puml) - Complete system architecture
-- [Data Flow Diagram](docs/DATA_FLOW_DIAGRAM.puml) - Event-driven pipeline flow
-- [Deployment Architecture](docs/DEPLOYMENT_ARCHITECTURE.puml) - Production deployment structure
+- [Architecture Diagram](docs/ARCHITECTURE_DIAGRAM.mmd) - Complete system architecture
+- [Data Flow Diagram](docs/DATA_FLOW_DIAGRAM.mmd) - Event-driven pipeline flow
+- [Deployment Architecture](docs/DEPLOYMENT_ARCHITECTURE.mmd) - Production deployment structure
 
 ## 📦 Installation
 
@@ -232,7 +232,7 @@ For comprehensive architecture documentation, see:
 
 ```bash
 # Clone repository
-git clone https://github.com/mergemind/mergemind.git
+git clone https://github.com/prabhakaran-jm/mergemind.git
 cd mergemind
 
 # Copy environment file
