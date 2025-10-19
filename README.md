@@ -1,6 +1,6 @@
 # MergeMind: AI-Powered Software Development Intelligence Platform
 
-MergeMind is a comprehensive analytics and insights platform that transforms GitLab merge request data into actionable intelligence. Built for the **Fivetran Challenge**, it demonstrates a complete end-to-end solution combining custom data ingestion, cloud-native architecture, and advanced AI capabilities.
+MergeMind is a comprehensive analytics and insights platform that transforms GitLab merge request data into actionable intelligence. Built for the **Fivetran Challenge** by a solo developer, it demonstrates a complete end-to-end solution combining custom data ingestion, cloud-native architecture, and advanced AI capabilities.
 
 ## 🏆 Hackathon Submission Highlights
 
@@ -710,6 +710,14 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 - Python: Black, isort, flake8
 - JavaScript: Prettier, ESLint
 - TypeScript: Strict mode enabled
+
+## 👨‍💻 Developer
+
+**Solo Developer Project**
+- Built from scratch for the Fivetran Challenge
+- Full-stack development: Frontend, Backend, AI Services, Infrastructure
+- Technologies: Python, React, Google Cloud, Vertex AI, BigQuery, Fivetran
+- Architecture: Event-driven pipeline with AI-powered analytics
 
 ## 📄 License
 
