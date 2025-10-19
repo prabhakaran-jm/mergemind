@@ -143,9 +143,7 @@ export const cleanMarkdownArtifacts = (text: string): string => {
   // just remove the fences. The primary goal is to clean up truncated input.
   return cleanedText
     .replace(/```/g, '') // Remove any remaining fences
-    // Remove bold markdown
-    .replace(/\*\*([^*]+)\*\*/g, '$1')
-    // Remove italic markdown (single asterisks)
+    // Italic markdown is removed, but bold is preserved for the renderer.
     .replace(/\*([^*]+)\*/g, '$1')
     // Remove heading markdown
     .replace(/^##\s+/gm, '')
@@ -157,6 +155,23 @@ export const cleanMarkdownArtifacts = (text: string): string => {
 };
 
 /**
+ * Renders text with bold markdown support
+ */
+const renderWithBold = (text: string): React.ReactNode => {
+  if (!text) return text;
+
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+};
+
+
+/**
  * Renders text content with proper formatting for lists and paragraphs
  */
 export const renderFormattedText = (text: string, accentColor: string = '#646cff'): React.ReactNode => {
@@ -166,16 +181,27 @@ export const renderFormattedText = (text: string, accentColor: string = '#646cff
 
   let cleanedText = cleanMarkdownArtifacts(text);
 
-  // If the content appears to be a JSON string, apply basic formatting to make it readable.
   if (cleanedText.trim().startsWith('{')) {
     cleanedText = cleanedText
-      .replace(/[\{\}]/g, '') // Remove all curly braces
-      .replace(/"([^"]+)":\s*("([^"]*)"|[\w\s.-]+)/g, (_match, key, value) => {
-        const cleanValue = value.replace(/"/g, '').trim();
-        const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
-        return `\n**${formattedKey}**\n- ${cleanValue}\n`;
+      // 1. Add newlines before keys to separate entries
+      .replace(/"([^"]+)":/g, '\n"$1":')
+      // 2. Format keys as bolded titles
+      .replace(/"([^"]+)":/g, '**$1**')
+      // 3. Remove braces and trailing commas that are now on their own lines
+      .replace(/[\{\}\,]/g, '')
+      // 4. Handle string values - ROBUST to truncation and missing closing quotes
+      // Captures everything after ": " including quotes, even if truncated
+      .replace(/:\s*"(.*)$/gm, (_match, content) => {
+        // Remove trailing quote if present, but preserve content if missing
+        const cleanContent = content.endsWith('"') ? content.slice(0, -1) : content;
+        return `:\n- ${cleanContent}`;
       })
-      .replace(/,/g, '') // Remove commas
+      // 5. Handle unquoted values (numbers, booleans, null)
+      .replace(/:\s*([\w.-]+)$/gm, ':\n- $1')
+      // 6. Remove any remaining colons at the start of a line (from keys with nested objects)
+      .replace(/^\s*:/gm, '')
+      // 7. Clean up underscores and capitalize keys
+      .replace(/\*\*([^*]+)\*\*/g, (_match, key) => `**${key.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}**`)
       .trim();
   }
   
@@ -188,16 +214,15 @@ export const renderFormattedText = (text: string, accentColor: string = '#646cff
 
         // Handle bolded keys from our JSON formatting
         if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) {
-          const content = trimmedLine.replace(/\*\*/g, '');
+          const content = trimmedLine.slice(2, -2);
           return (
             <div key={index} style={{
-              fontWeight: '600',
-              color: accentColor,
               marginTop: '12px',
               marginBottom: '4px',
-              fontSize: '0.9em'
+              fontSize: '0.9em',
+              color: accentColor,
             }}>
-              {content}
+              <strong>{content}</strong>
             </div>
           );
         }
@@ -222,7 +247,7 @@ export const renderFormattedText = (text: string, accentColor: string = '#646cff
                 minWidth: '10px'
               }}>•</span>
               <span style={{ flex: 1, fontStyle: content ? 'normal' : 'italic', color: content ? '#555' : '#999' }}>
-                {content || 'No information available'}
+                {renderWithBold(content || 'No information available')}
               </span>
             </div>
           );
@@ -231,7 +256,7 @@ export const renderFormattedText = (text: string, accentColor: string = '#646cff
         // Regular paragraph
         return (
           <div key={index} style={{ marginBottom: '12px' }}>
-            {trimmedLine}
+            {renderWithBold(trimmedLine)}
           </div>
         );
       })}

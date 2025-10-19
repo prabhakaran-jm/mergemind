@@ -224,8 +224,9 @@ class AIInsightsService:
             Format your response as structured JSON with clear categories and actionable insights.
             """
             
-            response = self.vertex_client.generate_text(prompt)
-            
+            # Use higher token limit to prevent truncation of comprehensive insights
+            response = self.vertex_client.generate_text(prompt, max_tokens=2500, temperature=0.7)
+
             # Parse and structure the response
             insights = self._parse_gemini_response(response)
             
@@ -396,8 +397,9 @@ class AIInsightsService:
             Provide confidence levels for each prediction.
             """
             
-            response = self.vertex_client.generate_text(prompt)
-            
+            # Use higher token limit to prevent truncation of predictive insights
+            response = self.vertex_client.generate_text(prompt, max_tokens=2500, temperature=0.7)
+
             # Return predictions in the format expected by UI
             return {
                 "raw_response": response,
