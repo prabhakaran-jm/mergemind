@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Brain, TrendingUp, AlertTriangle, CheckCircle, Clock, Star, Target } from 'lucide-react'
 import axios from 'axios'
 import { API_BASE_URL } from '../utils/apiConfig'
+import { renderComplexContent } from '../utils/contentRenderer'
+import { AlertTriangle, Clock, CheckCircle, Star, Brain, TrendingUp } from 'lucide-react'
 
 interface AIInsight {
   type: string
@@ -49,7 +50,7 @@ export const AIInsightsCard = ({ mrId, onClose }: AIInsightsCardProps) => {
   const [insights, setInsights] = useState<AIInsightsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'insights' | 'recommendations' | 'trends' | 'predictions'>('insights')
+  const [activeTab, setActiveTab] = useState<'insights' | 'trends' | 'predictions'>('insights')
 
   useEffect(() => {
     fetchAIInsights()
@@ -101,10 +102,10 @@ export const AIInsightsCard = ({ mrId, onClose }: AIInsightsCardProps) => {
 
   if (loading) {
     return (
-      <div style={{ 
-        background: 'white', 
-        borderRadius: '8px', 
-        padding: '20px', 
+      <div style={{
+        background: 'white',
+        borderRadius: '8px',
+        padding: '20px',
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
         marginBottom: '20px'
       }}>
@@ -119,10 +120,10 @@ export const AIInsightsCard = ({ mrId, onClose }: AIInsightsCardProps) => {
 
   if (error) {
     return (
-      <div style={{ 
-        background: 'white', 
-        borderRadius: '8px', 
-        padding: '20px', 
+      <div style={{
+        background: 'white',
+        borderRadius: '8px',
+        padding: '20px',
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
         marginBottom: '20px'
       }}>
@@ -151,10 +152,10 @@ export const AIInsightsCard = ({ mrId, onClose }: AIInsightsCardProps) => {
   }
 
   return (
-    <div style={{ 
-      background: 'white', 
-      borderRadius: '8px', 
-      padding: '20px', 
+    <div style={{
+      background: 'white',
+      borderRadius: '8px',
+      padding: '20px',
       boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
       marginBottom: '20px'
     }}>
@@ -162,11 +163,11 @@ export const AIInsightsCard = ({ mrId, onClose }: AIInsightsCardProps) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Brain className="w-5 h-5 text-blue-500" />
           <h3 style={{ margin: 0, color: '#333' }}>AI Insights</h3>
-          <span style={{ 
-            background: '#e3f2fd', 
-            color: '#1976d2', 
-            padding: '2px 8px', 
-            borderRadius: '12px', 
+          <span style={{
+            background: '#e3f2fd',
+            color: '#1976d2',
+            padding: '2px 8px',
+            borderRadius: '12px',
             fontSize: '0.8em',
             fontWeight: '500'
           }}>
@@ -174,7 +175,7 @@ export const AIInsightsCard = ({ mrId, onClose }: AIInsightsCardProps) => {
           </span>
         </div>
         {onClose && (
-          <button 
+          <button
             onClick={onClose}
             style={{
               background: 'none',
@@ -190,16 +191,15 @@ export const AIInsightsCard = ({ mrId, onClose }: AIInsightsCardProps) => {
       </div>
 
       {/* Tab Navigation */}
-      <div style={{ 
-        display: 'flex', 
-        gap: '10px', 
+      <div style={{
+        display: 'flex',
+        gap: '10px',
         marginBottom: '20px',
         borderBottom: '1px solid #e0e0e0',
         paddingBottom: '10px'
       }}>
         {[
           { key: 'insights', label: 'Insights', icon: Brain },
-          { key: 'recommendations', label: 'Recommendations', icon: Target },
           { key: 'trends', label: 'Trends', icon: TrendingUp },
           { key: 'predictions', label: 'Predictions', icon: Star }
         ].map(({ key, label, icon: Icon }) => (
@@ -232,11 +232,11 @@ export const AIInsightsCard = ({ mrId, onClose }: AIInsightsCardProps) => {
           {insights.ai_insights && insights.ai_insights.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {insights.ai_insights.map((insight, index) => (
-                <div 
+                <div
                   key={index}
-                  style={{ 
-                    padding: '12px', 
-                    border: '1px solid #e0e0e0', 
+                  style={{
+                    padding: '12px',
+                    border: '1px solid #e0e0e0',
                     borderRadius: '6px',
                     backgroundColor: '#f9f9f9'
                   }}
@@ -246,7 +246,7 @@ export const AIInsightsCard = ({ mrId, onClose }: AIInsightsCardProps) => {
                     <span style={{ fontWeight: '600', fontSize: '0.9em' }}>
                       {insight.title}
                     </span>
-                    <span style={{ 
+                    <span style={{
                       background: getPriorityColor(insight.priority),
                       color: 'white',
                       padding: '2px 6px',
@@ -257,12 +257,12 @@ export const AIInsightsCard = ({ mrId, onClose }: AIInsightsCardProps) => {
                       {insight.priority}
                     </span>
                   </div>
-                  <p style={{ margin: 0, fontSize: '0.9em', color: '#333' }}>
-                    {insight.description}
-                  </p>
-                  <div style={{ 
-                    marginTop: '8px', 
-                    fontSize: '0.8em', 
+                  <div style={{ margin: 0, fontSize: '0.9em', color: '#333' }}>
+                    {renderComplexContent(insight.description, '#646cff')}
+                  </div>
+                  <div style={{
+                    marginTop: '8px',
+                    fontSize: '0.8em',
                     color: '#666',
                     display: 'flex',
                     alignItems: 'center',
@@ -281,62 +281,6 @@ export const AIInsightsCard = ({ mrId, onClose }: AIInsightsCardProps) => {
         </div>
       )}
 
-      {activeTab === 'recommendations' && (
-        <div>
-          <h4 style={{ margin: '0 0 15px 0', color: '#333' }}>Actionable Recommendations</h4>
-          {insights.recommendations && insights.recommendations.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {insights.recommendations.map((rec, index) => (
-                <div 
-                  key={index}
-                  style={{ 
-                    padding: '12px', 
-                    border: '1px solid #e0e0e0', 
-                    borderRadius: '6px',
-                    backgroundColor: '#f9f9f9'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                    {getPriorityIcon(rec.priority)}
-                    <span style={{ fontWeight: '600', fontSize: '0.9em' }}>
-                      {rec.title}
-                    </span>
-                    <span style={{ 
-                      background: getPriorityColor(rec.priority),
-                      color: 'white',
-                      padding: '2px 6px',
-                      borderRadius: '10px',
-                      fontSize: '0.7em',
-                      fontWeight: '500'
-                    }}>
-                      {rec.priority}
-                    </span>
-                  </div>
-                  <p style={{ margin: '0 0 8px 0', fontSize: '0.9em', color: '#333' }}>
-                    {rec.description}
-                  </p>
-                  {rec.actions && rec.actions.length > 0 && (
-                    <div>
-                      <p style={{ margin: '8px 0 4px 0', fontSize: '0.8em', fontWeight: '600', color: '#666' }}>
-                        Actions:
-                      </p>
-                      <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '0.8em', color: '#666' }}>
-                        {rec.actions.map((action, actionIndex) => (
-                          <li key={actionIndex}>{action}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p style={{ color: '#666', fontStyle: 'italic' }}>
-              No recommendations available for this merge request.
-            </p>
-          )}
-        </div>
-      )}
 
       {activeTab === 'trends' && (
         <div>
@@ -344,9 +288,9 @@ export const AIInsightsCard = ({ mrId, onClose }: AIInsightsCardProps) => {
           {insights.trends && Object.keys(insights.trends).length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               {Object.entries(insights.trends).map(([scope, trendData]) => (
-                <div key={scope} style={{ 
-                  padding: '12px', 
-                  border: '1px solid #e0e0e0', 
+                <div key={scope} style={{
+                  padding: '12px',
+                  border: '1px solid #e0e0e0',
                   borderRadius: '6px',
                   backgroundColor: '#f9f9f9'
                 }}>
@@ -379,27 +323,32 @@ export const AIInsightsCard = ({ mrId, onClose }: AIInsightsCardProps) => {
         <div>
           <h4 style={{ margin: '0 0 15px 0', color: '#333' }}>Predictive Insights</h4>
           {insights.predictions && !insights.predictions.error ? (
-            <div style={{ 
-              padding: '12px', 
-              border: '1px solid #e0e0e0', 
-              borderRadius: '6px',
-              backgroundColor: '#f9f9f9'
-            }}>
-              <p style={{ margin: 0, fontSize: '0.9em', color: '#333' }}>
-                {insights.predictions.raw_response || 'Predictive insights are being generated...'}
-              </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              {renderComplexContent(insights.predictions.raw_response || insights.predictions, '#646cff')}
             </div>
           ) : (
-            <p style={{ color: '#666', fontStyle: 'italic' }}>
-              No predictive insights available for this merge request.
-            </p>
+            <div style={{
+              padding: '20px',
+              textAlign: 'center',
+              color: '#666',
+              fontStyle: 'italic',
+              background: '#f8f9fa',
+              borderRadius: '6px',
+              border: '1px dashed #dee2e6'
+            }}>
+              <Star className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+              <p>No predictive insights available for this merge request.</p>
+              <p style={{ fontSize: '0.8em', marginTop: '8px' }}>
+                AI predictions are being generated based on historical patterns.
+              </p>
+            </div>
           )}
         </div>
       )}
 
-      <div style={{ 
-        marginTop: '15px', 
-        paddingTop: '15px', 
+      <div style={{
+        marginTop: '15px',
+        paddingTop: '15px',
         borderTop: '1px solid #e0e0e0',
         fontSize: '0.8em',
         color: '#666',
@@ -408,7 +357,7 @@ export const AIInsightsCard = ({ mrId, onClose }: AIInsightsCardProps) => {
         alignItems: 'center'
       }}>
         <span>Generated: {new Date(insights.timestamp).toLocaleString()}</span>
-        <button 
+        <button
           onClick={fetchAIInsights}
           style={{
             background: '#646cff',

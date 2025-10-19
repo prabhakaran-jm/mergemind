@@ -25,6 +25,8 @@ class AIInsightsService:
         self.bq_client = bigquery_client
         self.vertex_client = vertex_client
         self.project_id = bigquery_client.project_id
+        self.dataset_modeled = bigquery_client.dataset_modeled
+        self.dataset_raw = bigquery_client.dataset_raw
         
     async def generate_comprehensive_insights(self, mr_id: int) -> Dict[str, Any]:
         """
@@ -130,37 +132,42 @@ class AIInsightsService:
     async def _gather_mr_data(self, mr_id: int) -> Optional[Dict[str, Any]]:
         """Gather all relevant data for a merge request from mergemind dataset."""
         try:
-            # First try to get basic MR data from mr_activity_view
+            # Get basic MR data using JOIN between raw and modeled tables
             basic_query = f"""
             SELECT 
-                mr_id,
-                project_id,
-                title,
-                author_id,
-                state,
-                last_pipeline_status,
-                last_pipeline_age_min,
-                notes_count_24_h,
-                approvals_left,
-                additions,
-                deletions,
-                age_hours,
-                source_branch,
-                target_branch,
-                web_url,
-                assignee_id,
-                created_at,
-                updated_at,
-                merged_at,
-                closed_at,
-                work_in_progress,
-                labels,
+                raw.id as mr_id,
+                raw.project_id,
+                raw.title,
+                raw.author_id,
+                raw.state,
+                COALESCE(raw.last_pipeline_status, 'unknown') as last_pipeline_status,
+                COALESCE(raw.last_pipeline_age_min, 0) as last_pipeline_age_min,
+                raw.notes_count_24_h,
+                raw.approvals_left,
+                raw.additions,
+                raw.deletions,
+                TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), raw.created_at, HOUR) as age_hours,
+                raw.source_branch,
+                raw.target_branch,
+                raw.web_url,
+                raw.assignee_id,
+                raw.created_at,
+                raw.updated_at,
+                raw.merged_at,
+                raw.closed_at,
+                raw.work_in_progress,
+                raw.labels,
+                risk.risk_score_rule,
+                risk.risk_label,
+                risk.change_size_bucket,
                 CURRENT_TIMESTAMP() as data_freshness
-            FROM `{self.project_id}.{self.dataset_modeled}.mr_activity_view`
-            WHERE mr_id = {mr_id}
+            FROM `{self.project_id}.{self.dataset_raw}.merge_requests` raw
+            LEFT JOIN `{self.project_id}.{self.dataset_modeled}.merge_risk_features` risk
+              ON raw.id = risk.mr_id
+            WHERE raw.id = @mr_id
             """
             
-            results = self.bq_client.query(basic_query)
+            results = self.bq_client.query(basic_query, mr_id=mr_id)
             
             if results:
                 mr_data = results[0]

@@ -5,13 +5,13 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Copy package files
-COPY web/package*.json ./
+COPY app/frontend/web/package*.json ./
 
 # Install dependencies
 RUN npm ci
 
 # Copy source code
-COPY web/ .
+COPY app/frontend/web/ .
 
 # Set build-time environment variable for API URL (optional - will use dynamic detection if not set)
 # ARG VITE_API_BASE_URL=https://mergemind-api-epjxxjzzfq-uc.a.run.app/api/v1

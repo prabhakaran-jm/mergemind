@@ -237,7 +237,7 @@ class ReviewerService:
               created_at,
               additions,
               deletions
-            FROM `{self.bq_client.dataset_modeled}.mr_activity_view`
+            FROM `{self.bq_client.project_id}.{self.bq_client.dataset_modeled}.mr_activity_view`
             WHERE mr_id = @mr_id
             LIMIT 1
             """
@@ -275,10 +275,10 @@ class ReviewerService:
               state,
               approvals_left,
               notes_count_24_h
-            FROM `{self.bq_client.dataset_modeled}.mr_activity_view`
+            FROM `{self.bq_client.project_id}.{self.bq_client.dataset_modeled}.mr_activity_view`
             WHERE mr_id IN (
               SELECT DISTINCT mr_id 
-              FROM `{self.bq_client.dataset_raw}.mr_notes` 
+              FROM `{self.bq_client.project_id}.{self.bq_client.dataset_raw}.mr_notes` 
               WHERE author_id = @user_id
               ORDER BY created_at DESC
               LIMIT @limit
@@ -312,7 +312,7 @@ class ReviewerService:
               COUNTIF(note_type = 'review') as reviews,
               COUNTIF(note_type = 'comment') as comments,
               COUNTIF(created_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)) as recent_reviews
-            FROM `{self.bq_client.dataset_raw}.mr_notes`
+            FROM `{self.bq_client.project_id}.{self.bq_client.dataset_raw}.mr_notes`
             WHERE author_id = @user_id
             """
             
@@ -359,7 +359,7 @@ class ReviewerService:
               review_count,
               final_weight,
               rank_by_weight
-            FROM `{self.bq_client.dataset_modeled}.co_review_graph`
+            FROM `{self.bq_client.project_id}.{self.bq_client.dataset_modeled}.co_review_graph`
             WHERE author_id = @author_id
             ORDER BY final_weight DESC
             LIMIT @limit

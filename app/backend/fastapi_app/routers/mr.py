@@ -228,22 +228,24 @@ async def get_mr_stats(
         if not check_rate_limit():
             raise HTTPException(status_code=429, detail="Rate limit exceeded")
         
-        sql = """
+        sql = f"""
         SELECT 
-          mr_id,
-          project_id,
-          title,
-          author_id,
-          created_at,
-          state,
-          additions,
-          deletions,
-          last_pipeline_status,
-          last_pipeline_age_min,
-          notes_count_24_h,
-          approvals_left
-        FROM `{bigquery_client.project_id}.{bigquery_client.dataset_modeled}.mr_activity_view`
-        WHERE mr_id = @mr_id
+          raw.id as mr_id,
+          raw.project_id,
+          raw.title,
+          raw.author_id,
+          raw.created_at,
+          raw.state,
+          raw.additions,
+          raw.deletions,
+          COALESCE(raw.last_pipeline_status, 'unknown') as last_pipeline_status,
+          COALESCE(raw.last_pipeline_age_min, 0) as last_pipeline_age_min,
+          raw.notes_count_24_h,
+          raw.approvals_left
+        FROM `{bigquery_client.project_id}.{bigquery_client.dataset_raw}.merge_requests` raw
+        LEFT JOIN `{bigquery_client.project_id}.{bigquery_client.dataset_modeled}.merge_risk_features` risk
+          ON raw.id = risk.mr_id
+        WHERE raw.id = @mr_id
         LIMIT 1
         """
         

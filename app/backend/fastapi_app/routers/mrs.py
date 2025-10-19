@@ -50,28 +50,30 @@ async def list_merge_requests(
         
         sql = f"""
         SELECT 
-          mr_id,
-          project_id,
-          title,
-          author_id,
-          assignee_id,
-          created_at,
-          updated_at,
-          state,
-          TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), created_at, HOUR) AS age_hours,
-          last_pipeline_status,
-          notes_count_24_h,
-          approvals_left,
-          additions,
-          deletions,
-          source_branch,
-          target_branch,
-          web_url,
-          merged_at,
-          closed_at
-        FROM `{bigquery_client.project_id}.{bigquery_client.dataset_modeled}.mr_activity_view`
+          raw.id as mr_id,
+          raw.project_id,
+          raw.title,
+          raw.author_id,
+          raw.assignee_id,
+          raw.created_at,
+          raw.updated_at,
+          raw.state,
+          TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), raw.created_at, HOUR) AS age_hours,
+          COALESCE(raw.last_pipeline_status, 'unknown') as last_pipeline_status,
+          raw.notes_count_24_h,
+          raw.approvals_left,
+          raw.additions,
+          raw.deletions,
+          raw.source_branch,
+          raw.target_branch,
+          raw.web_url,
+          raw.merged_at,
+          raw.closed_at
+        FROM `{bigquery_client.project_id}.{bigquery_client.dataset_raw}.merge_requests` raw
+        LEFT JOIN `{bigquery_client.project_id}.{bigquery_client.dataset_modeled}.merge_risk_features` risk
+          ON raw.id = risk.mr_id
         WHERE {where_clause}
-        ORDER BY mr_id DESC
+        ORDER BY raw.id DESC
         LIMIT @limit
         """
         

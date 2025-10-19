@@ -50,7 +50,9 @@ class SummaryService:
                 }
             
             # Extract GitLab IID from web_url
-            gitlab_iid = self._extract_gitlab_iid(mr_data.get("web_url", ""))
+            web_url = mr_data.get("web_url", "")
+            logger.info(f"Attempting to extract IID from web_url: {web_url}")
+            gitlab_iid = self._extract_gitlab_iid(web_url)
             if not gitlab_iid:
                 logger.warning(f"Could not extract GitLab IID from web_url for MR {mr_id}")
                 return {
@@ -99,23 +101,25 @@ class SummaryService:
     def _get_mr_data(self, mr_id: int) -> Optional[Dict[str, Any]]:
         """Get MR data from BigQuery."""
         try:
-            sql = """
+            sql = f"""
             SELECT 
-              mr_id,
-              project_id,
-              title,
-              author_id,
-              created_at,
-              state,
-              additions,
-              deletions,
-              last_pipeline_status,
-              last_pipeline_age_min,
-              notes_count_24_h,
-              approvals_left,
-              web_url
-            FROM `{self.bq_client.project_id}.{self.bq_client.dataset_modeled}.mr_activity_view`
-            WHERE mr_id = @mr_id
+              raw.id as mr_id,
+              raw.project_id,
+              raw.title,
+              raw.author_id,
+              raw.created_at,
+              raw.state,
+              raw.additions,
+              raw.deletions,
+              COALESCE(raw.last_pipeline_status, 'unknown') as last_pipeline_status,
+              COALESCE(raw.last_pipeline_age_min, 0) as last_pipeline_age_min,
+              raw.notes_count_24_h,
+              raw.approvals_left,
+              raw.web_url
+            FROM `{self.bq_client.project_id}.{self.bq_client.dataset_raw}.merge_requests` raw
+            LEFT JOIN `{self.bq_client.project_id}.{self.bq_client.dataset_modeled}.merge_risk_features` risk
+              ON raw.id = risk.mr_id
+            WHERE raw.id = @mr_id
             LIMIT 1
             """
             

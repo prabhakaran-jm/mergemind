@@ -10,17 +10,17 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
-COPY fastapi_app/requirements.txt .
+COPY app/backend/fastapi_app/requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code selectively to avoid cache files
-COPY fastapi_app/main.py .
-COPY fastapi_app/routers/ ./routers/
-COPY fastapi_app/services/ ./services/
-COPY fastapi_app/middleware/ ./middleware/
-COPY ../ai/ ./ai/
+COPY app/backend/fastapi_app/main.py .
+COPY app/backend/fastapi_app/routers/ ./routers/
+COPY app/backend/fastapi_app/services/ ./services/
+COPY app/backend/fastapi_app/middleware/ ./middleware/
+COPY app/ai/ ./ai/
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash app \

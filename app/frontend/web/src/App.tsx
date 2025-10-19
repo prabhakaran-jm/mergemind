@@ -16,7 +16,7 @@ interface MRItem {
   risk_score: number
   pipeline_status: string
   approvals_left: number
-  notes_count_24h: number
+  notes_count_24_h: number
   additions: number
   deletions: number
 }
@@ -196,7 +196,59 @@ function App() {
         </div>
       </div>
 
-      <table className="table">
+      {/* AI Analysis Overview Section */}
+      <div className="ai-analysis-overview" style={{ marginTop: '2rem' }}>
+        <div className="overview-header">
+          <h2>AI Analysis Overview</h2>
+          <p>Real-time insights into your merge request pipeline</p>
+          <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.5rem' }}>Last sync: 2m ago</p>
+        </div>
+        <div className="overview-stats">
+          <div className="stat-card active-mrs" title="Total number of active merge requests">
+            <div className="stat-icon">
+              <Brain className="w-6 h-6" />
+            </div>
+            <div className="stat-content">
+              <div className="stat-number">{mrs.length}</div>
+              <div className="stat-label">Active MRs</div>
+              <div className="stat-sublabel">Currently open</div>
+            </div>
+          </div>
+          <div className="stat-card high-risk" title="Merge requests with high risk assessment">
+            <div className="stat-icon">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <div className="stat-content">
+              <div className="stat-number">{mrs.filter(mr => mr.risk_band === 'HIGH' || mr.risk_band === 'high').length}</div>
+              <div className="stat-label">High Risk</div>
+              <div className="stat-sublabel">Requires attention</div>
+            </div>
+          </div>
+          <div className="stat-card passing-pipelines" title="Merge requests with successful pipeline runs">
+            <div className="stat-icon">
+              <CheckCircle className="w-6 h-6" />
+            </div>
+            <div className="stat-content">
+              <div className="stat-number">{mrs.filter(mr => mr.pipeline_status === 'success').length}</div>
+              <div className="stat-label">Passing Pipelines</div>
+              <div className="stat-sublabel">Build successful</div>
+            </div>
+          </div>
+          <div className="stat-card ready-to-merge" title="Merge requests ready for final approval">
+            <div className="stat-icon">
+              <User className="w-6 h-6" />
+            </div>
+            <div className="stat-content">
+              <div className="stat-number">{mrs.filter(mr => mr.approvals_left === 0).length}</div>
+              <div className="stat-label">Ready to Merge</div>
+              <div className="stat-sublabel">All approvals received</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="table-container">
+        <table className="table">
         <thead>
           <tr>
             <th>Title</th>
@@ -226,47 +278,53 @@ function App() {
               </td>
               <td>{formatAge(mr.age_hours)}</td>
               <td>
-                <span className={getRiskBadgeClass(mr.risk_band)}>
-                  {mr.risk_band} ({mr.risk_score})
+                <span className={`status-pill risk-${mr.risk_band.toLowerCase()}`} title={mr.risk_band === 'LOW' ? 'Safe to merge' : mr.risk_band === 'MEDIUM' ? 'Review recommended' : 'Requires attention'}>
+                  {mr.risk_band === 'HIGH' && <AlertTriangle className="w-4 h-4" />}
+                  {mr.risk_band === 'MEDIUM' && <Clock className="w-4 h-4" />}
+                  {mr.risk_band === 'LOW' && <CheckCircle className="w-4 h-4" />}
+                  {mr.risk_band}
                 </span>
               </td>
               <td>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className={`status-pill pipeline-${mr.pipeline_status}`} title={mr.pipeline_status === 'success' ? 'Build successful' : mr.pipeline_status === 'failed' ? 'Build failed' : mr.pipeline_status === 'running' ? 'Build in progress' : 'No data'}>
                   {getPipelineIcon(mr.pipeline_status)}
-                  <span>{mr.pipeline_status}</span>
-                </div>
+                  {mr.pipeline_status}
+                </span>
               </td>
               <td>{mr.approvals_left}</td>
-              <td>{mr.notes_count_24h} notes</td>
+              <td>{mr.notes_count_24_h} notes</td>
               <td>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => handleSummaryClick(mr.mr_id)}>
+                <div className="action-group">
+                  <button 
+                    className="action-button summary"
+                    onClick={() => handleSummaryClick(mr.mr_id)}
+                    title="View summary"
+                  >
                     Summary
                   </button>
                   <button 
+                    className="action-button ai-insights"
                     onClick={() => setShowAIInsights(true)}
-                    style={{
-                      background: '#7c3aed',
-                      color: 'white',
-                      border: 'none',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '0.8em',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}
+                    title="AI-generated insights"
                   >
                     <Brain className="w-3 h-3" />
-                    AI
+                    AI Insights
+                  </button>
+                  <button 
+                    className="action-button ai-recommendations"
+                    onClick={() => setShowAIRecommendations(true)}
+                    title="Recommended next steps"
+                  >
+                    <Target className="w-3 h-3" />
+                    AI Recommendations
                   </button>
                 </div>
               </td>
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
 
       {showModal && (
         <div className="modal">

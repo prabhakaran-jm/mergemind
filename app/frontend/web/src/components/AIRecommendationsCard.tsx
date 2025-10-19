@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Target, AlertTriangle, Clock, Star, Zap } from 'lucide-react'
 import axios from 'axios'
 import { API_BASE_URL } from '../utils/apiConfig'
+import { renderComplexContent } from '../utils/contentRenderer'
+import { AlertTriangle, Zap, Clock, Target, Star } from 'lucide-react'
 
 interface AIRecommendation {
   type: string
@@ -77,10 +78,10 @@ export const AIRecommendationsCard = ({ mrId, onClose }: AIRecommendationsCardPr
 
   if (loading) {
     return (
-      <div style={{ 
-        background: 'white', 
-        borderRadius: '8px', 
-        padding: '20px', 
+      <div style={{
+        background: 'white',
+        borderRadius: '8px',
+        padding: '20px',
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
         marginBottom: '20px'
       }}>
@@ -95,10 +96,10 @@ export const AIRecommendationsCard = ({ mrId, onClose }: AIRecommendationsCardPr
 
   if (error) {
     return (
-      <div style={{ 
-        background: 'white', 
-        borderRadius: '8px', 
-        padding: '20px', 
+      <div style={{
+        background: 'white',
+        borderRadius: '8px',
+        padding: '20px',
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
         marginBottom: '20px'
       }}>
@@ -127,10 +128,10 @@ export const AIRecommendationsCard = ({ mrId, onClose }: AIRecommendationsCardPr
   }
 
   return (
-    <div style={{ 
-      background: 'white', 
-      borderRadius: '8px', 
-      padding: '20px', 
+    <div style={{
+      background: 'white',
+      borderRadius: '8px',
+      padding: '20px',
       boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
       marginBottom: '20px'
     }}>
@@ -138,22 +139,22 @@ export const AIRecommendationsCard = ({ mrId, onClose }: AIRecommendationsCardPr
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Target className="w-5 h-5 text-green-500" />
           <h3 style={{ margin: 0, color: '#333' }}>AI Recommendations</h3>
-          <span style={{ 
-            background: '#e8f5e8', 
-            color: '#28a745', 
-            padding: '2px 8px', 
-            borderRadius: '12px', 
+          <span style={{
+            background: '#e8f5e8',
+            color: '#28a745',
+            padding: '2px 8px',
+            borderRadius: '12px',
             fontSize: '0.8em',
             fontWeight: '500'
           }}>
             {recommendations.total_count} total
           </span>
           {recommendations.high_priority_count > 0 && (
-            <span style={{ 
-              background: '#f8d7da', 
-              color: '#dc3545', 
-              padding: '2px 8px', 
-              borderRadius: '12px', 
+            <span style={{
+              background: '#f8d7da',
+              color: '#dc3545',
+              padding: '2px 8px',
+              borderRadius: '12px',
               fontSize: '0.8em',
               fontWeight: '500'
             }}>
@@ -162,7 +163,7 @@ export const AIRecommendationsCard = ({ mrId, onClose }: AIRecommendationsCardPr
           )}
         </div>
         {onClose && (
-          <button 
+          <button
             onClick={onClose}
             style={{
               background: 'none',
@@ -180,11 +181,11 @@ export const AIRecommendationsCard = ({ mrId, onClose }: AIRecommendationsCardPr
       {recommendations.recommendations && recommendations.recommendations.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {recommendations.recommendations.map((rec, index) => (
-            <div 
+            <div
               key={index}
-              style={{ 
-                padding: '15px', 
-                border: '1px solid #e0e0e0', 
+              style={{
+                padding: '15px',
+                border: '1px solid #e0e0e0',
                 borderRadius: '8px',
                 backgroundColor: '#f9f9f9',
                 borderLeft: `4px solid ${getPriorityColor(rec.priority)}`
@@ -195,7 +196,7 @@ export const AIRecommendationsCard = ({ mrId, onClose }: AIRecommendationsCardPr
                 <span style={{ fontWeight: '600', fontSize: '1em', color: '#333' }}>
                   {rec.title}
                 </span>
-                <span style={{ 
+                <span style={{
                   background: getPriorityColor(rec.priority),
                   color: 'white',
                   padding: '3px 8px',
@@ -207,17 +208,17 @@ export const AIRecommendationsCard = ({ mrId, onClose }: AIRecommendationsCardPr
                   {rec.priority}
                 </span>
               </div>
-              
-              <p style={{ margin: '0 0 12px 0', fontSize: '0.9em', color: '#555', lineHeight: '1.4' }}>
-                {rec.description}
-              </p>
-              
+
+              <div style={{ margin: '0 0 12px 0', fontSize: '0.9em', color: '#555', lineHeight: '1.4' }}>
+                {renderComplexContent(rec.description, '#28a745')}
+              </div>
+
               {rec.actions && rec.actions.length > 0 && (
                 <div>
-                  <p style={{ 
-                    margin: '0 0 8px 0', 
-                    fontSize: '0.8em', 
-                    fontWeight: '600', 
+                  <p style={{
+                    margin: '0 0 8px 0',
+                    fontSize: '0.8em',
+                    fontWeight: '600',
                     color: '#666',
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px'
@@ -226,7 +227,7 @@ export const AIRecommendationsCard = ({ mrId, onClose }: AIRecommendationsCardPr
                   </p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {rec.actions.map((action, actionIndex) => (
-                      <div 
+                      <div
                         key={actionIndex}
                         style={{
                           display: 'flex',
@@ -256,9 +257,9 @@ export const AIRecommendationsCard = ({ mrId, onClose }: AIRecommendationsCardPr
           ))}
         </div>
       ) : (
-        <div style={{ 
-          padding: '20px', 
-          textAlign: 'center', 
+        <div style={{
+          padding: '20px',
+          textAlign: 'center',
           color: '#666',
           fontStyle: 'italic',
           background: '#f8f9fa',
@@ -273,9 +274,9 @@ export const AIRecommendationsCard = ({ mrId, onClose }: AIRecommendationsCardPr
         </div>
       )}
 
-      <div style={{ 
-        marginTop: '20px', 
-        paddingTop: '15px', 
+      <div style={{
+        marginTop: '20px',
+        paddingTop: '15px',
         borderTop: '1px solid #e0e0e0',
         fontSize: '0.8em',
         color: '#666',
@@ -284,7 +285,7 @@ export const AIRecommendationsCard = ({ mrId, onClose }: AIRecommendationsCardPr
         alignItems: 'center'
       }}>
         <span>Generated: {new Date(recommendations.timestamp).toLocaleString()}</span>
-        <button 
+        <button
           onClick={fetchRecommendations}
           style={{
             background: '#28a745',

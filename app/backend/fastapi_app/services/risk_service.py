@@ -116,7 +116,7 @@ class RiskService:
         """Get risk features from raw BigQuery data."""
         try:
             # Get risk features from transformed table
-            sql = """
+            sql = f"""
             SELECT 
               mr_id,
               project_id,
@@ -129,7 +129,7 @@ class RiskService:
               repo_merge_conflict_rate_14d,
               work_in_progress,
               labels_sensitive
-            FROM `{self.bq_client.dataset_modeled}.merge_risk_features`
+            FROM `{self.bq_client.project_id}.{self.bq_client.dataset_modeled}.merge_risk_features`
             WHERE mr_id = @mr_id
             LIMIT 1
             """
@@ -195,7 +195,7 @@ class RiskService:
     def _get_mr_details(self, mr_id: int) -> Optional[Dict[str, Any]]:
         """Get MR details from BigQuery."""
         try:
-            sql = """
+            sql = f"""
             SELECT 
               mr_id,
               project_id,
