@@ -8,16 +8,19 @@ export const parseJsonContent = (content: string): any | null => {
     return null;
   }
 
-  // Extract from markdown block if present
-  const jsonMatch = content.match(/```json\s*([\s\S]*?)```/);
-  const textToParse = jsonMatch ? jsonMatch[1] : content;
+  let textToParse = content;
 
-  // Ensure it looks like JSON before trying to parse
+  // If it starts with a markdown fence, strip it.
+  if (textToParse.trim().startsWith('```')) {
+    textToParse = textToParse.replace(/```(json)?\s*/, '');
+  }
+
+  // Attempt to parse what's left. If truncated, this will fail, which is expected.
   if (textToParse.trim().startsWith('{') || textToParse.trim().startsWith('[')) {
     try {
       return JSON.parse(textToParse);
     } catch (e) {
-      // Not valid JSON, fall through
+      // Not valid JSON
     }
   }
 
@@ -129,11 +132,17 @@ export const cleanMarkdownArtifacts = (text: string): string => {
     return '';
   }
 
-  return text
-    // Remove markdown code blocks (```json ... ```) - comprehensive pattern
-    .replace(/```json\s*([\s\S]*?)```/g, (_, content) => {
-      return content.trim();
-    })
+  let cleanedText = text;
+
+  // Handle truncated code blocks by removing the opening fence if it exists.
+  if (cleanedText.trim().startsWith('```')) {
+    cleanedText = cleanedText.replace(/```(json)?\s*/, '');
+  }
+
+  // This regex is now simpler because we are not trying to capture content,
+  // just remove the fences. The primary goal is to clean up truncated input.
+  return cleanedText
+    .replace(/```/g, '') // Remove any remaining fences
     // Remove bold markdown
     .replace(/\*\*([^*]+)\*\*/g, '$1')
     // Remove italic markdown (single asterisks)

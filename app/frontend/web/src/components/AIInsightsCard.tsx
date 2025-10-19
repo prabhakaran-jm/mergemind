@@ -271,7 +271,7 @@ export const AIInsightsCard = ({ mrId, onClose }: AIInsightsCardProps) => {
                     <span>Confidence: {formatConfidence(insight.confidence)}</span>
                   </div>
                 </div>
-              ))}
+              ))}  
             </div>
           ) : (
             <p style={{ color: '#666', fontStyle: 'italic' }}>

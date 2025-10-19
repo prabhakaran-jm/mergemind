@@ -254,7 +254,7 @@ export const AIRecommendationsCard = ({ mrId, onClose }: AIRecommendationsCardPr
                 </div>
               )}
             </div>
-          ))}
+          ))}  
         </div>
       ) : (
         <div style={{
