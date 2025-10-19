@@ -18,11 +18,13 @@ export default defineConfig({
     port: parseInt(process.env.PORT || '8080'),
     host: '0.0.0.0',
     allowedHosts: [
-      'mergemind-ui-epjxxjzzfq-uc.a.run.app',
-      'mergemind-ui-812918665937.us-central1.run.app',
+      process.env.CUSTOM_DOMAIN || 'localhost',
+      process.env.CUSTOM_DOMAIN ? `www.${process.env.CUSTOM_DOMAIN}` : 'www.localhost',
+      process.env.CLOUD_RUN_URL ? new URL(process.env.CLOUD_RUN_URL).hostname : undefined,
       'localhost',
-      '127.0.0.1'
-    ]
+      '127.0.0.1',
+      'all' // Allow all hosts in production
+    ].filter(Boolean)
   },
   build: {
     outDir: 'dist',

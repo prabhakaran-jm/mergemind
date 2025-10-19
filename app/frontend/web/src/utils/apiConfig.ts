@@ -14,7 +14,7 @@ export const getApiBaseUrl = (): string => {
   if (envApiUrl && envApiUrl !== 'undefined') {
     return envApiUrl;
   }
-  
+
   // If we're running on Cloud Run, try to construct API URL dynamically
   if (window.location.hostname.includes('run.app')) {
     // Extract service name pattern: mergemind-ui-{project}-{region}.run.app
@@ -23,9 +23,14 @@ export const getApiBaseUrl = (): string => {
     const apiHostname = hostname.replace('mergemind-ui-', 'mergemind-api-');
     return `https://${apiHostname}/api/v1`;
   }
-  
-  // Fallback to localhost for development
-  return 'http://localhost:8080/api/v1';
+
+  // Handle custom domain (mergemind.co.uk → api.mergemind.co.uk)
+  if (window.location.hostname === 'mergemind.co.uk' || window.location.hostname === 'www.mergemind.co.uk') {
+    return 'https://api.mergemind.co.uk/api/v1';
+  }
+
+  // Fallback to same-origin /api for local development
+  return `${window.location.origin}/api/v1`;
 };
 
 // Export the configured API base URL

@@ -3,7 +3,7 @@ MergeMind FastAPI Application
 Main entry point for the MergeMind API service.
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import os
@@ -38,18 +38,59 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Configure CORS origins from environment variables
+def get_cors_origins():
+    """Get CORS origins from environment variables with sensible defaults."""
+    # Check for individual origin environment variables
+    origins = []
+    
+    # Add custom domain if set
+    custom_domain = os.getenv("CUSTOM_DOMAIN")
+    if custom_domain:
+        origins.append(f"https://{custom_domain}")
+        origins.append(f"https://www.{custom_domain}")
+    
+    # Add Cloud Run URL if set
+    cloud_run_url = os.getenv("CLOUD_RUN_URL")
+    if cloud_run_url:
+        origins.append(cloud_run_url)
+    
+    # If no origins are set via env vars, use defaults for development
+    if not origins:
+        origins = [
+            "http://localhost:5173",  # Vite dev server
+            "http://localhost:3000",   # Alternative dev port
+        ]
+    
+    return origins
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=get_cors_origins(),
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
 # Add observability middleware
 app.add_middleware(StructuredLoggingMiddleware)
 app.add_middleware(MetricsMiddleware)
+
+# Add security headers middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    
+    # Add HSTS header for HTTPS (Cloud Run serves over HTTPS)
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    
+    # Add other security headers
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    
+    return response
 
 # Include routers
 app.include_router(health.router, prefix="/api/v1", tags=["health"])
