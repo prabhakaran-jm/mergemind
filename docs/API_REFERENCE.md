@@ -1,18 +1,34 @@
 # MergeMind API Reference
 
-Complete reference documentation for the MergeMind API endpoints, including request/response schemas, error codes, and examples.
+Complete reference documentation for the MergeMind API endpoints, including request/response schemas, error codes, and examples. The API provides comprehensive access to AI-powered merge request analysis, insights, and recommendations.
 
-## Table of Contents
+## 🚀 Quick Start
+
+### Base URLs
+- **Development**: `http://localhost:8080/api/v1`
+- **Production**: `https://api.mergemind.co.uk/api/v1`
+- **Documentation**: `https://api.mergemind.co.uk/docs` (Interactive Swagger UI)
+
+### Authentication
+Currently, the MergeMind API does not require authentication for MVP. Future versions will support API keys and OAuth 2.0.
+
+### Example Request
+```bash
+curl "https://api.mergemind.co.uk/api/v1/mrs?limit=10"
+```
+
+## 📋 Table of Contents
 
 1. [Authentication](#authentication)
-2. [Base URL](#base-url)
-3. [Rate Limiting](#rate-limiting)
-4. [Error Handling](#error-handling)
-5. [Endpoints](#endpoints)
-6. [Event-Driven Pipeline](#event-driven-pipeline)
-7. [Data Models](#data-models)
-8. [Examples](#examples)
-9. [SDKs](#sdks)
+2. [Rate Limiting](#rate-limiting)
+3. [Error Handling](#error-handling)
+4. [Core Endpoints](#core-endpoints)
+5. [AI-Powered Endpoints](#ai-powered-endpoints)
+6. [Health & Monitoring](#health--monitoring)
+7. [Event-Driven Pipeline](#event-driven-pipeline)
+8. [Data Models](#data-models)
+9. [Examples](#examples)
+10. [SDKs](#sdks)
 
 ## Authentication
 
@@ -74,7 +90,371 @@ All errors return JSON with the following structure:
 | 500 | Internal Server Error | Server error |
 | 503 | Service Unavailable | External service down |
 
-## Endpoints
+## 🎯 Core Endpoints
+
+### Merge Requests
+
+#### GET /mrs
+List merge requests with risk analysis and filtering options.
+
+**Query Parameters:**
+- `limit` (int, optional): Number of results (default: 50, max: 100)
+- `state` (string, optional): Filter by state (`open`, `closed`, `merged`)
+- `risk_band` (string, optional): Filter by risk level (`LOW`, `MEDIUM`, `HIGH`)
+- `project_id` (int, optional): Filter by project ID
+
+**Response:**
+```json
+{
+  "items": [
+    {
+      "mr_id": 123,
+      "project_id": 45,
+      "title": "Add user authentication",
+      "author": "john.doe",
+      "age_hours": 24.5,
+      "risk_band": "MEDIUM",
+      "risk_score": 0.65,
+      "pipeline_status": "success",
+      "approvals_left": 1,
+      "notes_count_24_h": 3,
+      "additions": 150,
+      "deletions": 25
+    }
+  ],
+  "total": 1,
+  "limit": 50
+}
+```
+
+#### GET /mr/{mr_id}/context
+Get comprehensive context for a specific merge request.
+
+**Response:**
+```json
+{
+  "mr_id": 123,
+  "project_id": 45,
+  "title": "Add user authentication",
+  "author": {
+    "user_id": 1,
+    "name": "John Doe"
+  },
+  "state": "opened",
+  "age_hours": 24.5,
+  "risk": {
+    "score": 0.65,
+    "band": "MEDIUM",
+    "reasons": ["Large code changes", "Security-related changes"]
+  },
+  "last_pipeline": {
+    "status": "success",
+    "age_min": 30
+  },
+  "approvals_left": 1,
+  "notes_recent": 3,
+  "size": {
+    "additions": 150,
+    "deletions": 25
+  },
+  "labels": ["feature", "security"],
+  "web_url": "https://gitlab.com/project/merge_requests/123",
+  "source_branch": "feature/auth",
+  "target_branch": "main"
+}
+```
+
+### Blockers
+
+#### GET /blockers/top
+Get top blocking merge requests that need attention.
+
+**Query Parameters:**
+- `limit` (int, optional): Number of results (default: 10)
+
+**Response:**
+```json
+{
+  "blockers": [
+    {
+      "mr_id": 123,
+      "title": "Critical security fix",
+      "blocking_reason": "High risk security changes",
+      "priority": "HIGH",
+      "age_hours": 48.5,
+      "author": "jane.smith"
+    }
+  ]
+}
+```
+
+## 🤖 AI-Powered Endpoints
+
+### AI Insights
+
+#### GET /ai-insights/{mr_id}
+Get comprehensive AI-generated insights for a merge request.
+
+**Response:**
+```json
+{
+  "mr_id": 123,
+  "insights": [
+    {
+      "type": "code_quality",
+      "title": "Code Quality Analysis",
+      "summary": "The code shows good structure with proper error handling",
+      "details": [
+        "Functions are well-documented",
+        "Error handling is comprehensive",
+        "Code follows established patterns"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "type": "security",
+      "title": "Security Assessment",
+      "summary": "Potential security considerations identified",
+      "details": [
+        "Authentication logic looks secure",
+        "No obvious SQL injection vulnerabilities",
+        "Consider adding rate limiting"
+      ],
+      "confidence": 0.78
+    }
+  ],
+  "generated_at": "2024-01-01T12:00:00Z"
+}
+```
+
+### AI Recommendations
+
+#### GET /ai-recommendations/{mr_id}
+Get AI-generated recommendations for next steps.
+
+**Response:**
+```json
+{
+  "mr_id": 123,
+  "recommendations": [
+    {
+      "type": "reviewer",
+      "priority": "HIGH",
+      "title": "Assign Security Reviewer",
+      "description": "This MR contains authentication changes and should be reviewed by a security expert",
+      "action": "Assign @security-team member as reviewer"
+    },
+    {
+      "type": "testing",
+      "priority": "MEDIUM",
+      "title": "Add Integration Tests",
+      "description": "Consider adding integration tests for the new authentication flow",
+      "action": "Create test cases covering login/logout scenarios"
+    }
+  ],
+  "generated_at": "2024-01-01T12:00:00Z"
+}
+```
+
+### AI Summary
+
+#### POST /mr/{mr_id}/summary
+Generate AI-powered summary of merge request changes.
+
+**Response:**
+```json
+{
+  "summary": [
+    "Added user authentication system with JWT tokens",
+    "Implemented login/logout functionality",
+    "Added password hashing with bcrypt",
+    "Created user registration endpoint"
+  ],
+  "risks": [
+    "Authentication changes require careful review",
+    "New endpoints need rate limiting",
+    "Consider adding 2FA support"
+  ],
+  "tests": [
+    "Add unit tests for authentication service",
+    "Create integration tests for login flow",
+    "Test password hashing functionality"
+  ],
+  "generated_at": "2024-01-01T12:00:00Z"
+}
+```
+
+### Reviewer Suggestions
+
+#### GET /mr/{mr_id}/reviewers
+Get AI-suggested reviewers based on expertise and workload.
+
+**Response:**
+```json
+{
+  "reviewers": [
+    {
+      "user_id": 5,
+      "name": "Alice Johnson",
+      "score": 0.92,
+      "reason": "Expert in authentication systems and security",
+      "workload": "Low",
+      "availability": "Available"
+    },
+    {
+      "user_id": 8,
+      "name": "Bob Smith",
+      "score": 0.85,
+      "reason": "Experienced with backend APIs and user management",
+      "workload": "Medium",
+      "availability": "Available"
+    }
+  ],
+  "generated_at": "2024-01-01T12:00:00Z"
+}
+```
+
+### Risk Analysis
+
+#### GET /mr/{mr_id}/risk
+Get comprehensive risk analysis for merge request.
+
+**Response:**
+```json
+{
+  "mr_id": 123,
+  "risk_score": 0.65,
+  "risk_band": "MEDIUM",
+  "analysis": {
+    "code_patterns": {
+      "score": 0.7,
+      "details": "Code follows established patterns with good structure"
+    },
+    "security": {
+      "score": 0.6,
+      "details": "Authentication changes require careful review",
+      "vulnerabilities": [
+        "Consider adding rate limiting to login endpoint",
+        "Ensure proper session management"
+      ]
+    },
+    "complexity": {
+      "score": 0.65,
+      "details": "Moderate complexity with multiple components"
+    }
+  },
+  "recommendations": [
+    "Assign security expert as reviewer",
+    "Add comprehensive tests",
+    "Consider staging environment testing"
+  ],
+  "generated_at": "2024-01-01T12:00:00Z"
+}
+```
+
+## 🏥 Health & Monitoring
+
+#### GET /healthz
+Basic health check endpoint.
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-01T12:00:00Z"
+}
+```
+
+#### GET /ready
+Readiness check with dependency validation.
+
+**Response:**
+```json
+{
+  "status": "ready",
+  "timestamp": "2024-01-01T12:00:00Z",
+  "dependencies": {
+    "bigquery": "healthy",
+    "gitlab": "healthy",
+    "vertex_ai": "healthy"
+  }
+}
+```
+
+#### GET /health/detailed
+Comprehensive health check with metrics.
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-01T12:00:00Z",
+  "services": {
+    "bigquery": {
+      "status": "healthy",
+      "response_time_ms": 45
+    },
+    "gitlab": {
+      "status": "healthy",
+      "response_time_ms": 120
+    },
+    "vertex_ai": {
+      "status": "healthy",
+      "response_time_ms": 250
+    }
+  },
+  "metrics": {
+    "total_requests": 15420,
+    "error_rate": 0.02,
+    "avg_response_time_ms": 180
+  }
+}
+```
+
+#### GET /metrics
+Get application metrics in Prometheus format.
+
+**Response:**
+```
+# HELP mergemind_requests_total Total number of requests
+# TYPE mergemind_requests_total counter
+mergemind_requests_total{method="GET",endpoint="/mrs",status="200"} 1250
+
+# HELP mergemind_request_duration_seconds Request duration in seconds
+# TYPE mergemind_request_duration_seconds histogram
+mergemind_request_duration_seconds_bucket{le="0.1"} 500
+mergemind_request_duration_seconds_bucket{le="0.5"} 1200
+mergemind_request_duration_seconds_bucket{le="1.0"} 1400
+mergemind_request_duration_seconds_bucket{le="+Inf"} 1500
+```
+
+#### GET /metrics/slo
+Get SLO status and violations.
+
+**Response:**
+```json
+{
+  "slo_status": {
+    "availability": {
+      "target": 99.9,
+      "current": 99.95,
+      "status": "healthy"
+    },
+    "latency": {
+      "target": 95,
+      "current": 98,
+      "status": "healthy"
+    },
+    "error_rate": {
+      "target": 0.1,
+      "current": 0.05,
+      "status": "healthy"
+    }
+  },
+  "violations": [],
+  "last_updated": "2024-01-01T12:00:00Z"
+}
+```
 
 ## Event-Driven Pipeline
 

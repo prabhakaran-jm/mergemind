@@ -1,28 +1,50 @@
-# MergeMind: An AI-Powered Software Development Intelligence Platform
+# MergeMind: AI-Powered Software Development Intelligence Platform
 
-MergeMind is an advanced analytics and insights platform for GitLab. It leverages a custom Fivetran connector, Google BigQuery, and Google Vertex AI to provide engineering teams with powerful tools to enhance productivity, reduce risk, and streamline the code review process.
+MergeMind is a comprehensive analytics and insights platform that transforms GitLab merge request data into actionable intelligence. Built for the **Fivetran Challenge**, it demonstrates a complete end-to-end solution combining custom data ingestion, cloud-native architecture, and advanced AI capabilities.
 
-## Fivetran Challenge Submission
+## 🏆 Hackathon Submission Highlights
 
-This project is a submission for the **Fivetran Challenge**. It demonstrates a complete, end-to-end solution that meets and exceeds the challenge requirements:
+This project showcases a production-ready solution that exceeds all challenge requirements:
 
-1.  **Custom Fivetran Connector:** We built a sophisticated, production-ready Fivetran connector for the GitLab API.
-2.  **Google Cloud Integration:** The connector loads data into **Google BigQuery**, which is then used to power our AI application.
-3.  **Industry-Focused AI Application:** We developed an AI-powered intelligence engine using **Google Vertex AI** to solve common problems in the software development lifecycle (SDLC), providing augmented analytics for engineering teams.
-4.  **Modern AI & Data Relevance:** The solution showcases the use of LLMs for multi-step reasoning, automated summarization, and proactive risk and security analysis.
+### ✅ **Custom Fivetran Connector**
+- **Production-grade GitLab API connector** with incremental sync capabilities
+- **Dynamic project discovery** and automated data pipeline
+- **Event-driven architecture** with Cloud Function triggers
+- **Comprehensive error handling** and monitoring
+
+### ✅ **Google Cloud Integration** 
+- **BigQuery data warehouse** with automated dbt transformations
+- **Vertex AI integration** for advanced AI capabilities
+- **Cloud Run deployment** with auto-scaling and monitoring
+- **Event-driven pipeline** eliminating batch processing delays
+
+### ✅ **Industry-Focused AI Application**
+- **AI Reviewer Suggester** with multi-step reasoning
+- **AI Risk Assessor** with security vulnerability detection
+- **AI Diff Summarizer** with intelligent caching
+- **Comprehensive insights** for engineering teams
+
+### ✅ **Modern AI & Data Relevance**
+- **Multi-step LLM reasoning** for complex analysis
+- **Proactive security scanning** and risk assessment
+- **Real-time insights** and recommendations
+- **Scalable architecture** supporting enterprise workloads
 
 ---
 
 ## 🚀 Key Features
 
-### Recent Improvements (v1.0.0)
+### 🎯 **Core AI Capabilities**
+- **Smart Reviewer Suggestions**: Multi-step AI reasoning to recommend optimal reviewers based on expertise, workload, and availability
+- **Intelligent Risk Assessment**: Comprehensive risk analysis with security vulnerability detection, code pattern analysis, and complexity scoring
+- **Automated Diff Summarization**: AI-powered summaries with intelligent caching and commit-based invalidation
+- **Real-time Insights**: Live analysis of merge request pipeline with actionable recommendations
 
-- **🏗️ Reorganized Architecture**: Clean separation of concerns with `app/` (frontend/backend/ai) and `deploy/` (infrastructure) folders
-- **🔐 Enhanced Security**: Removed all hardcoded values, implemented dynamic configuration with environment variables
-- **📦 Clean Repository**: Eliminated binary files, proper .gitignore/.dockerignore configuration
-- **⚙️ Multi-Environment Support**: Terraform variables for dev/staging/prod deployments
-- **🔄 Event-Driven Pipeline**: Automated dbt triggers with Cloud Functions
-- **📊 Production Ready**: Comprehensive monitoring, logging, and alerting
+### 🏗️ **Production Architecture**
+- **Event-Driven Data Pipeline**: Real-time processing with Fivetran → BigQuery → dbt → API
+- **Cloud-Native Deployment**: Google Cloud Run with auto-scaling, monitoring, and security
+- **Modern Tech Stack**: FastAPI backend, React frontend, Vertex AI integration
+- **Comprehensive Monitoring**: Prometheus, Grafana, custom exporters, and alerting
 
 ### 1. Custom Fivetran Connector for GitLab
 
@@ -49,82 +71,10 @@ At the core of MergeMind is a sophisticated AI engine built on Google Vertex AI 
 -   **AI Diff Summarizer:** Automatically generates clear, concise summaries of merge requests.
     -   **Intelligent Caching:** Features a smart caching mechanism that uses the commit SHA as part of the cache key, ensuring summaries are only regenerated when the code actually changes, saving time and cost.
 
-### 3. Modern, Scalable Architecture
+## 🏗️ Technical Architecture
 
--   **Data Pipeline:** Fivetran -> Google BigQuery -> dbt
--   **Backend:** FastAPI (Python)
--   **AI Services:** Google Vertex AI
--   **Frontend:** React
--   **Infrastructure:** Deployed on Google Cloud Run, managed with Terraform.
-
-## 📋 Table of Contents
-
-- [Quick Start](#quick-start)
-- [Architecture](#architecture)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [API Documentation](#api-documentation)
-- [Deployment](#deployment)
-- [Monitoring](#monitoring)
-- [Security](#security)
-- [Contributing](#contributing)
-- [License](#license)
-
-## 🏃‍♂️ Quick Start
-
-### Prerequisites
-
-- Python 3.11+
-- Node.js 18+
-- Google Cloud Platform account
-- GitLab instance (self-hosted or GitLab.com)
-- Fivetran account (for data ingestion)
-
-### Local Development
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/mergemind/mergemind.git
-   cd mergemind
-   ```
-
-2. **Set up environment**
-   ```bash
-   # Copy environment template
-   cp .env.example .env
-   
-   # Edit configuration
-   nano .env
-   ```
-
-3. **Install dependencies**
-   ```bash
-   # Install API dependencies
-   cd app/backend/fastapi_app
-   pip install -r requirements.txt
-   
-   # Install UI dependencies
-   cd ../../frontend/web
-   npm install
-   ```
-
-4. **Start services**
-   ```bash
-   # Start API (terminal 1)
-   cd app/backend/fastapi_app
-   uvicorn main:app --reload --port 8080
-   
-   # Start UI (terminal 2)
-   cd app/frontend/web
-   npm run dev
-   ```
-
-5. **Access the application**
-   - API: http://localhost:8080
-   - UI: http://localhost:5173
-   - API Docs: http://localhost:8080/docs
-
-## 🏗️ Architecture
+### **System Overview**
+MergeMind implements a modern, cloud-native architecture with event-driven data processing and AI-powered analytics:
 
 ```mermaid
 graph TB
@@ -209,15 +159,99 @@ graph TB
     CF -->|Credentials| SECRETS
 ```
 
-### Core Components
+### **Core Components**
 
-- **Data Ingestion**: Fivetran custom connector for GitLab data
-- **Event-Driven Pipeline**: Cloud Function triggers dbt runs on new data
-- **Data Warehouse**: BigQuery with raw (`mergemind_raw`) and modeled (`mergemind`) datasets
-- **dbt Transformations**: Automated data modeling and transformations
-- **AI Services**: Vertex AI for diff summarization and analysis
-- **API Layer**: FastAPI with comprehensive endpoints
-- **Frontend**: React dashboard for MR management
+#### **1. Data Ingestion Layer**
+- **Fivetran Custom Connector**: Production-grade GitLab API connector with incremental sync
+- **Dynamic Project Discovery**: Automatically discovers and syncs projects based on patterns
+- **Event-Driven Triggers**: Cloud Function integration for real-time dbt execution
+
+#### **2. Data Processing Layer**
+- **BigQuery Data Warehouse**: Scalable data storage with partitioning and clustering
+- **dbt Transformations**: Automated data modeling and business logic
+- **Event-Driven Pipeline**: Eliminates batch processing delays
+
+#### **3. AI Services Layer**
+- **Vertex AI Integration**: Google's Gemini 2.5 Flash Lite for advanced reasoning
+- **Multi-Step AI Reasoning**: Complex analysis chains for reviewer suggestions
+- **Intelligent Caching**: Commit-based cache invalidation for optimal performance
+
+#### **4. Application Layer**
+- **FastAPI Backend**: High-performance Python API with comprehensive endpoints
+- **React Frontend**: Modern, responsive dashboard with real-time updates
+- **Cloud Run Deployment**: Serverless, auto-scaling infrastructure
+
+#### **5. Monitoring & Observability**
+- **Prometheus Metrics**: Comprehensive application and business metrics
+- **Grafana Dashboards**: Real-time visualization and alerting
+- **Custom Exporters**: BigQuery, GitLab, and Vertex AI monitoring
+
+## 📋 Table of Contents
+
+- [Quick Start](#quick-start)
+- [Architecture](#architecture)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [API Documentation](#api-documentation)
+- [Deployment](#deployment)
+- [Monitoring](#monitoring)
+- [Security](#security)
+- [Contributing](#contributing)
+- [License](#license)
+
+## 🏃‍♂️ Quick Start
+
+### Prerequisites
+
+- Python 3.11+
+- Node.js 18+
+- Google Cloud Platform account
+- GitLab instance (self-hosted or GitLab.com)
+- Fivetran account (for data ingestion)
+
+### Local Development
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/mergemind/mergemind.git
+   cd mergemind
+   ```
+
+2. **Set up environment**
+   ```bash
+   # Copy environment template
+   cp .env.example .env
+   
+   # Edit configuration
+   nano .env
+   ```
+
+3. **Install dependencies**
+   ```bash
+   # Install API dependencies
+   cd app/backend/fastapi_app
+   pip install -r requirements.txt
+   
+   # Install UI dependencies
+   cd ../../frontend/web
+   npm install
+   ```
+
+4. **Start services**
+   ```bash
+   # Start API (terminal 1)
+   cd app/backend/fastapi_app
+   uvicorn main:app --reload --port 8080
+   
+   # Start UI (terminal 2)
+   cd app/frontend/web
+   npm run dev
+   ```
+
+5. **Access the application**
+   - API: http://localhost:8080
+   - UI: http://localhost:5173
+   - API Docs: http://localhost:8080/docs
 
 ### Detailed Architecture Diagrams
 
