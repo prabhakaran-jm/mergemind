@@ -164,7 +164,21 @@ export const renderFormattedText = (text: string, accentColor: string = '#646cff
     return null;
   }
 
-  const cleanedText = cleanMarkdownArtifacts(text);
+  let cleanedText = cleanMarkdownArtifacts(text);
+
+  // If the content appears to be a JSON string, apply basic formatting to make it readable.
+  if (cleanedText.trim().startsWith('{')) {
+    cleanedText = cleanedText
+      .replace(/[\{\}]/g, '') // Remove all curly braces
+      .replace(/"([^"]+)":\s*("([^"]*)"|[\w\s.-]+)/g, (_match, key, value) => {
+        const cleanValue = value.replace(/"/g, '').trim();
+        const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+        return `\n**${formattedKey}**\n- ${cleanValue}\n`;
+      })
+      .replace(/,/g, '') // Remove commas
+      .trim();
+  }
+  
   const lines = cleanedText.split('\n').filter(line => line.trim());
 
   return (
@@ -172,8 +186,24 @@ export const renderFormattedText = (text: string, accentColor: string = '#646cff
       {lines.map((line, index) => {
         const trimmedLine = line.trim();
 
-        // Check if line is a bullet point
-        if (trimmedLine.startsWith('*') || trimmedLine.startsWith('-') || trimmedLine.startsWith('•')) {
+        // Handle bolded keys from our JSON formatting
+        if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) {
+          const content = trimmedLine.replace(/\*\*/g, '');
+          return (
+            <div key={index} style={{
+              fontWeight: '600',
+              color: accentColor,
+              marginTop: '12px',
+              marginBottom: '4px',
+              fontSize: '0.9em'
+            }}>
+              {content}
+            </div>
+          );
+        }
+
+        // Handle values as bullet points
+        if (trimmedLine.startsWith('-')) {
           const content = trimmedLine.substring(1).trim();
           return (
             <div key={index} style={{
@@ -181,7 +211,8 @@ export const renderFormattedText = (text: string, accentColor: string = '#646cff
               alignItems: 'flex-start',
               gap: '10px',
               marginBottom: '10px',
-              paddingLeft: '4px'
+              paddingLeft: '12px',
+              borderLeft: `2px solid ${accentColor}20`,
             }}>
               <span style={{
                 color: accentColor,
@@ -190,7 +221,9 @@ export const renderFormattedText = (text: string, accentColor: string = '#646cff
                 lineHeight: '1.2',
                 minWidth: '10px'
               }}>•</span>
-              <span style={{ flex: 1 }}>{content}</span>
+              <span style={{ flex: 1, fontStyle: content ? 'normal' : 'italic', color: content ? '#555' : '#999' }}>
+                {content || 'No information available'}
+              </span>
             </div>
           );
         }
